@@ -709,56 +709,18 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
                 <span className="block text-[10.5px] font-bold text-green-700 tracking-wider uppercase font-mono text-center">
                   Pilih Akun Cepat (Koneksi Instan):
                 </span>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => useDemoAccount('default')}
-                    className="p-2 bg-green-50/20 hover:bg-green-50/60 border border-green-100 rounded-xl text-left transition-all cursor-pointer group space-y-0.5 shrink-0"
-                  >
-                    <div className="flex items-center gap-1 justify-between">
-                      <span className="text-[9.5px] font-bold text-green-800 font-mono">SENDI TIO ALSI</span>
-                      <Sparkles size={10} className="text-green-600 group-hover:animate-bounce" />
-                    </div>
-                    <span className="text-[8.5px] text-green-600 font-mono block">operator-spenda</span>
-                    <span className="text-[8px] bg-green-100 text-green-800 px-1 py-0.2 rounded font-sans font-bold">Operator Utama</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => useDemoAccount('admin')}
-                    className="p-2 bg-green-50/20 hover:bg-green-50/60 border border-green-100 rounded-xl text-left transition-all cursor-pointer group space-y-0.5 shrink-0"
-                  >
-                    <div className="flex items-center gap-1 justify-between">
-                      <span className="text-[9.5px] font-bold text-green-800 font-mono">ADMIN UTAMA</span>
-                      <ShieldCheck size={10} className="text-green-600" />
-                    </div>
-                    <span className="text-[8.5px] text-green-600 font-mono block">admin-spenda</span>
-                    <span className="text-[8px] bg-sky-100 text-sky-800 px-1 py-0.2 rounded font-sans font-bold">Selamanya</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => useDemoAccount('staff')}
-                    className="p-2 bg-green-50/20 hover:bg-green-50/60 border border-green-100 rounded-xl text-left transition-all cursor-pointer group space-y-0.5 shrink-0"
-                  >
-                    <div className="flex items-center gap-1 justify-between">
-                      <span className="text-[9.5px] font-bold text-green-800 font-mono">SITI RAHMAWATI</span>
-                    </div>
-                    <span className="text-[8.5px] text-green-600 font-mono block">staff123</span>
-                    <span className="text-[8px] bg-slate-100 text-slate-755 px-1 py-0.2 rounded font-sans font-bold">Staff Kesiswaan</span>
-                  </button>
-
+                <div className="flex justify-center">
                   <button
                     type="button"
                     onClick={() => useDemoAccount('demo')}
-                    className="p-2 bg-amber-50/20 hover:bg-amber-50/50 border border-amber-100 rounded-xl text-left transition-all cursor-pointer group space-y-0.5 shrink-0"
+                    className="w-full p-2.5 bg-amber-50/20 hover:bg-amber-50/50 border border-amber-150 rounded-xl text-left transition-all cursor-pointer group space-y-0.5"
                   >
                     <div className="flex items-center gap-1 justify-between">
-                      <span className="text-[9.5px] font-bold text-amber-900 font-mono">AKUN DEMO</span>
-                      <Lock size={10} className="text-amber-600" />
+                      <span className="text-[10px] font-bold text-amber-900 font-mono">AKUN DEMO</span>
+                      <Lock size={12} className="text-amber-600 group-hover:scale-110 transition-transform" />
                     </div>
-                    <span className="text-[8.5px] text-amber-700 font-mono block">demo123</span>
-                    <span className="text-[8px] bg-amber-100 text-amber-800 px-1 py-0.2 rounded font-sans font-bold">Akses Terbatas</span>
+                    <span className="text-[9px] text-amber-700 font-mono block">demo123</span>
+                    <span className="text-[8.5px] inline-block bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-sans font-bold">Akses Terbatas</span>
                   </button>
                 </div>
               </div>
