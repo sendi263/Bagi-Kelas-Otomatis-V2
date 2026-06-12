@@ -16,7 +16,10 @@ import {
   CreditCard,
   Receipt,
   Check,
-  Coins
+  Coins,
+  MessageSquare,
+  MessageCircle,
+  Edit2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AuthUser } from '../types';
@@ -38,9 +41,16 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  // WhatsApp configuration state
+  const [whatsappAdminNumber, setWhatsappAdminNumber] = useState(() => {
+    return localStorage.getItem('SPENDA_PAYMENT_WA_NUMBER') || '6282329380931';
+  });
+  const [isConfiguringWa, setIsConfiguringWa] = useState(false);
+  const [waInputTemp, setWaInputTemp] = useState(whatsappAdminNumber);
+
   // Payment integration state
   const [isPaymentStep, setIsPaymentStep] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'qris' | 'transfer'>('qris');
+  const [paymentMethod, setPaymentMethod] = useState<'wa' | 'qris' | 'transfer'>('wa');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentAmount] = useState('150.000');
@@ -361,35 +371,100 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
               </div>
 
               {/* Payment Methods selector */}
-              <div className="grid grid-cols-2 gap-2 bg-green-50 p-1 rounded-xl border border-green-100">
+              <div className="grid grid-cols-3 gap-1 bg-green-50 p-1 rounded-xl border border-green-100">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('wa')}
+                  className={`py-2 text-[9.5px] font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                    paymentMethod === 'wa'
+                      ? 'bg-white text-emerald-700 border border-emerald-200 shadow-sm font-black'
+                      : 'text-green-600 hover:text-green-800'
+                  }`}
+                >
+                  <MessageCircle size={11} className="text-emerald-500 fill-emerald-500/10" />
+                  <span>WA (Utama)</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('qris')}
-                  className={`py-2 text-[10.5px] font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  className={`py-2 text-[9.5px] font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
                     paymentMethod === 'qris'
                       ? 'bg-white text-green-700 border border-green-200 shadow-sm'
                       : 'text-green-600 hover:text-green-800'
                   }`}
                 >
-                  <QrCode size={13} />
-                  <span>QRIS (Otomatis)</span>
+                  <QrCode size={11} />
+                  <span>QRIS</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('transfer')}
-                  className={`py-2 text-[10.5px] font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  className={`py-2 text-[9.5px] font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
                     paymentMethod === 'transfer'
                       ? 'bg-white text-green-700 border border-green-200 shadow-sm'
                       : 'text-green-600 hover:text-green-800'
                   }`}
                 >
-                  <CreditCard size={13} />
-                  <span>Transfer Bank</span>
+                  <CreditCard size={11} />
+                  <span>Transfer</span>
                 </button>
               </div>
 
               <div className="bg-white p-4 rounded-xl border border-green-100 space-y-4">
-                {paymentMethod === 'qris' ? (
+                {paymentMethod === 'wa' ? (
+                  <div className="space-y-3.5 text-center">
+                    <div className="bg-emerald-50/50 rounded-2xl p-4 border border-emerald-100 space-y-3">
+                      <div className="flex justify-center">
+                        <div className="w-12 h-12 bg-emerald-500/10 text-emerald-600 rounded-full flex items-center justify-center border border-emerald-200 animate-pulse">
+                          <MessageCircle size={22} className="fill-emerald-500/10 text-emerald-600" />
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-bold text-emerald-950 uppercase tracking-wide">
+                          Aktivasi Instan via WhatsApp
+                        </h3>
+                        <p className="text-[10px] text-emerald-800/90 leading-relaxed mt-1">
+                          Sistem akan meneruskan Anda langsung ke WhatsApp Admin Developer untuk verifikasi pembayaran & pendaftaran akun secara aman.
+                        </p>
+                      </div>
+
+                      {/* Structured Message Template Preview */}
+                      <div className="bg-white p-3 rounded-xl border border-emerald-150/70 text-left text-[9.5px] space-y-1 font-mono text-emerald-900 border-dashed">
+                        <div className="font-bold text-emerald-950 border-b border-emerald-50 pb-1 mb-1.5 flex items-center justify-between">
+                          <span>PREVIEW DETAIL PESAN WA:</span>
+                          <span className="text-[7.5px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-sans font-bold">Autofill</span>
+                        </div>
+                        <p className="truncate">Halo Admin SPENDA 🌟</p>
+                        <p className="truncate">Saya ingin mengaktifkan akun lisensi:</p>
+                        <p className="pl-1.5 truncate">• Nama: {tempRegistrationData?.name}</p>
+                        <p className="pl-1.5 truncate">• Email: {tempRegistrationData?.email}</p>
+                        <p className="pl-1.5 truncate">• Peran: {tempRegistrationData?.role}</p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const textMessage = 
+                          `Halo Admin EduData Spenda 🌟\n\n` +
+                          `Saya baru saja mendaftarkan akun di aplikasi Rombel Otomatis.\n\n` +
+                          `📝 DETAIL AKUN REGISTER:\n` +
+                          `• Nama Operator: ${tempRegistrationData?.name || fullName}\n` +
+                          `• Email Akun: ${tempRegistrationData?.email || email}\n` +
+                          `• Jabatan/Peran: ${tempRegistrationData?.role || role}\n\n` +
+                          `Mohon petunjuk untuk prosedur pembelian lisensi & aktivasi akunya. Terima kasih!`;
+                        
+                        const encodedText = encodeURIComponent(textMessage);
+                        const waLink = `https://wa.me/${whatsappAdminNumber}?text=${encodedText}`;
+                        window.open(waLink, '_blank');
+                      }}
+                      className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] text-white rounded-xl text-xs font-black tracking-wide shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                      <MessageSquare size={14} className="fill-white/10" />
+                      <span>HUBUNGI ADMIN WHATSAPP (BELI LISENSI)</span>
+                    </button>
+                  </div>
+                ) : paymentMethod === 'qris' ? (
                   <div className="space-y-3 flex flex-col items-center text-center">
                     <span className="text-[10px] bg-green-50 text-green-800 font-bold px-2 py-0.5 rounded uppercase tracking-widest font-mono">
                       QRIS LISENSI RESMI
@@ -486,6 +561,65 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
                     )}
                   </button>
                 )}
+
+                {/* WhatsApp setup configuration panel */}
+                <div className="border border-slate-100 rounded-xl p-3 bg-slate-50/70 text-[9.5px] text-zinc-500 space-y-1 mt-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-700">⚙️ Pengaturan WA Admin Penjualan</span>
+                    {!isConfiguringWa ? (
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setWaInputTemp(whatsappAdminNumber);
+                          setIsConfiguringWa(true);
+                        }}
+                        className="text-emerald-600 hover:text-emerald-800 font-bold flex items-center gap-1"
+                      >
+                        <Edit2 size={9} />
+                        <span>Ubah Nomor</span>
+                      </button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            if (waInputTemp.trim()) {
+                              setWhatsappAdminNumber(waInputTemp.trim());
+                              localStorage.setItem('SPENDA_PAYMENT_WA_NUMBER', waInputTemp.trim());
+                              setIsConfiguringWa(false);
+                            }
+                          }}
+                          className="text-emerald-600 font-bold font-sans uppercase"
+                        >
+                          Simpan
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => setIsConfiguringWa(false)}
+                          className="text-slate-400 font-sans"
+                        >
+                          Batal
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {isConfiguringWa ? (
+                    <div className="mt-1 space-y-1">
+                      <input 
+                        type="text"
+                        value={waInputTemp}
+                        onChange={(e) => setWaInputTemp(e.target.value)}
+                        placeholder="Contoh: 6282329380931"
+                        className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none"
+                      />
+                      <span className="text-[8px] text-slate-400 leading-none block">Gunakan awalan kode negara tanpa spasi (contoh: 62823...)</span>
+                    </div>
+                  ) : (
+                    <p className="text-slate-600 leading-tight">
+                      Link WhatsApp saat ini dikirim ke: <code className="font-mono font-black bg-emerald-50 px-1 rounded text-emerald-800">+{whatsappAdminNumber}</code>. Anda dapat menyesuaikan nomor tujuan ini agar diarahkan langsung ke no WA Anda!
+                    </p>
+                  )}
+                </div>
 
                 <button
                   type="button"
