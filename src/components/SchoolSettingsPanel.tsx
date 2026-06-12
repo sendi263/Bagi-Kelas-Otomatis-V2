@@ -58,7 +58,22 @@ export default function SchoolSettingsPanel({
         if (remote && remote.length > 0) {
           const mergedMap = new Map();
           local.forEach(u => mergedMap.set(u.email.toLowerCase(), u));
-          remote.forEach(u => mergedMap.set(u.email.toLowerCase(), u));
+          remote.forEach(u => {
+            if (u && u.email) {
+              const emailKey = u.email.toLowerCase();
+              const existing = mergedMap.get(emailKey);
+              if (existing) {
+                mergedMap.set(emailKey, {
+                  ...existing,
+                  ...u,
+                  password: u.password || existing.password || '',
+                  activatePaid: u.activatePaid !== undefined ? u.activatePaid : existing.activatePaid
+                });
+              } else {
+                mergedMap.set(emailKey, u);
+              }
+            }
+          });
           const list = Array.from(mergedMap.values());
           setRegisteredUsers(list);
           secureStorage.setItem('SPENDA_REGISTERED_USERS', list);

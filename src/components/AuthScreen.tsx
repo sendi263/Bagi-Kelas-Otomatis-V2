@@ -111,11 +111,22 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
         defaultUsers.forEach(u => mergedMap.set(u.email.toLowerCase(), u));
         // Load local cash (to capture registered offline users if any)
         localUsers.forEach(u => mergedMap.set(u.email.toLowerCase(), u));
-        // Load remote (remote has precedence for cross-device consistency)
+        // Load remote (remote has precedence for cross-device consistency, but preserve local passwords if remote has none)
         if (Array.isArray(remoteUsers)) {
           remoteUsers.forEach(u => {
             if (u && u.email) {
-              mergedMap.set(u.email.toLowerCase(), u);
+              const emailKey = u.email.toLowerCase();
+              const existing = mergedMap.get(emailKey);
+              if (existing) {
+                mergedMap.set(emailKey, {
+                  ...existing,
+                  ...u,
+                  password: u.password || existing.password || '',
+                  activatePaid: u.activatePaid !== undefined ? u.activatePaid : existing.activatePaid
+                });
+              } else {
+                mergedMap.set(emailKey, u);
+              }
             }
           });
         }
