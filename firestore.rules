@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (default-deny catch-all)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Helpers
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function incoming() {
+      return request.resource.data;
+    }
+    
+    function existing() {
+      return resource.data;
+    }
+
+    // Document Validation Helpers
+    function isValidStudent(data) {
+      return data.keys().hasAll(['id', 'name', 'gender', 'status', 'lastUpdated'])
+        && data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.gender is string && (data.gender == 'L' || data.gender == 'P')
+        && data.status is string && (data.status == 'Aktif' || data.status == 'Lulus' || data.status == 'Mutasi' || data.status == 'Non-Aktif')
+        && data.lastUpdated is string && data.lastUpdated.size() <= 50
+        && (!data.keys().contains('averageGrade') || (data.averageGrade is number && data.averageGrade >= 0 && data.averageGrade <= 100))
+        && (!data.keys().contains('nisn') || (data.nisn is string && data.nisn.size() <= 100))
+        && (!data.keys().contains('nik') || (data.nik is string && data.nik.size() <= 100))
+        && (!data.keys().contains('nikSiswa') || (data.nikSiswa is string && data.nikSiswa.size() <= 100))
+        && (!data.keys().contains('religion') || data.religion is string)
+        && (!data.keys().contains('birthPlace') || data.birthPlace is string)
+        && (!data.keys().contains('birthDate') || data.birthDate is string)
+        && (!data.keys().contains('asalKelas') || data.asalKelas is string)
+        && (!data.keys().contains('currentClass') || data.currentClass is string)
+        && (!data.keys().contains('email') || data.email is string)
+        && (!data.keys().contains('address') || data.address is string)
+        && (!data.keys().contains('guardianName') || data.guardianName is string);
+    }
+
+    function isValidSyncLog(data) {
+      return data.keys().hasAll(['id', 'timestamp', 'type', 'status', 'operator'])
+        && data.id is string
+        && data.timestamp is string
+        && data.type is string && (data.type == 'Inbound' || data.type == 'Outbound')
+        && data.status is string && (data.status == 'Sukses' || data.status == 'Gagal' || data.status == 'Proses')
+        && data.operator is string && data.operator.size() <= 150
+        && (!data.keys().contains('recordsCount') || data.recordsCount is number)
+        && (!data.keys().contains('details') || data.details is string);
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['id', 'title', 'description', 'date', 'type', 'completed', 'cycle'])
+        && data.id is string
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.description is string && data.description.size() <= 1000
+        && data.date is string
+        && data.type is string && (data.type == 'info' || data.type == 'warning' || data.type == 'success')
+        && data.completed is bool
+        && data.cycle is string && (data.cycle == 'Harian' || data.cycle == 'Mingguan' || data.cycle == 'Bulanan' || data.cycle == 'Semester');
+    }
+
+    function isValidSchoolSettings(data) {
+      return data.keys().hasAll(['schoolName', 'npsn', 'akreditasi', 'email'])
+        && data.schoolName is string && data.schoolName.size() > 0 && data.schoolName.size() <= 250
+        && data.npsn is string && data.npsn.size() >= 8 && data.npsn.size() <= 12
+        && data.akreditasi is string
+        && data.email is string;
+    }
+
+    // Collection Security Match Rules
+    
+    // 1. Students Collection
+    match /students/{studentId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(studentId) && isValidStudent(incoming());
+      allow update: if isSignedIn() && isValidId(studentId) && isValidStudent(incoming());
+      allow delete: if isSignedIn() && isValidId(studentId);
+    }
+
+    // 2. Sync Logs Collection
+    match /syncLogs/{logId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(logId) && isValidSyncLog(incoming());
+      allow update: if false; // Immutable after creation
+      allow delete: if false; // Logs cannot be deleted
+    }
+
+    // 3. Notifications Collection
+    match /notifications/{notifId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(notifId) && isValidNotification(incoming());
+      allow update: if isSignedIn() && isValidId(notifId) && isValidNotification(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['completed'])
+      );
+      allow delete: if isSignedIn() && isValidId(notifId);
+    }
+
+    // 4. School Settings Collection
+    match /schoolSettings/{settingId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidId(settingId) && isValidSchoolSettings(incoming());
+    }
+  }
+}

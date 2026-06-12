@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Remix: EduData SPENDA",
+  "description": "Sistem informasi manajemen data siswa digital dan terintegrasi untuk operator sekolah, dilengkapi dengan dashboard rekapitulasi, pembagian kelas heterogen otomatis yang adil, sinkronisasi Dapodik, sistem enkripsi data keamanan tinggi, serta ekspor Excel/PDF.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
