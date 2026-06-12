@@ -45,7 +45,7 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
   const [whatsappAdminNumber, setWhatsappAdminNumber] = useState(() => {
     return localStorage.getItem('SPENDA_PAYMENT_WA_NUMBER') || 
            (import.meta as any).env.VITE_WA_ADMIN_NUMBER || 
-           '6282329380931';
+           '6282186486436';
   });
   const [isConfiguringWa, setIsConfiguringWa] = useState(false);
   const [waInputTemp, setWaInputTemp] = useState(whatsappAdminNumber);
