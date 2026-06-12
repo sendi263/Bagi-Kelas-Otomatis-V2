@@ -438,40 +438,6 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
 
               {/* Action active buttons */}
               <div className="space-y-2">
-                {paymentSuccess ? (
-                  <button
-                    disabled
-                    type="button"
-                    className="w-full py-2.5 bg-green-600 text-white rounded-xl text-xs font-black tracking-wide flex items-center justify-center gap-1.5"
-                  >
-                    <Check size={14} className="stroke-[3]" />
-                    <span>VERIFIKASI SUKSES (Mengalihkan...)</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleConfirmMockPayment}
-                    disabled={isProcessingPayment}
-                    type="button"
-                    className={`w-full py-3 rounded-xl text-xs font-black tracking-wide cursor-pointer text-white flex items-center justify-center gap-2 ${
-                      isProcessingPayment 
-                        ? 'bg-green-50 border border-green-200 text-green-800' 
-                        : 'bg-green-600 hover:bg-green-700 shadow-md active:scale-[0.98] transition-all'
-                    }`}
-                  >
-                    {isProcessingPayment ? (
-                      <>
-                        <div className="w-3.5 h-3.5 border-2 border-green-400 border-t-green-600 rounded-full animate-spin"></div>
-                        <span>MENGHUBUNGI GATEWAY PEMBAYARAN...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Receipt size={14} />
-                        <span>SAYA SUDAH BAYAR / KONFIRMASI AKTIVASI</span>
-                      </>
-                    )}
-                  </button>
-                )}
-
                 <button
                   type="button"
                   onClick={() => {
@@ -480,7 +446,7 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
                     setErrorMsg('');
                     setSuccessMsg('');
                   }}
-                  className="w-full py-2 bg-transparent text-green-600 hover:text-green-800 rounded-lg text-[10.5px] font-bold text-center transition-colors block cursor-pointer"
+                  className="w-full py-2.5 bg-green-50 hover:bg-green-100/80 text-green-700 hover:text-green-900 rounded-xl text-xs font-bold text-center transition-colors block cursor-pointer border border-green-200/50"
                 >
                   Kembali ke Registrasi
                 </button>
