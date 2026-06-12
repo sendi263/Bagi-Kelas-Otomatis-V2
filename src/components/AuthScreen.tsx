@@ -43,9 +43,9 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
 
   // WhatsApp configuration state
   const [whatsappAdminNumber, setWhatsappAdminNumber] = useState(() => {
-    return localStorage.getItem('SPENDA_PAYMENT_WA_NUMBER') || 
-           (import.meta as any).env.VITE_WA_ADMIN_NUMBER || 
-           '6282186486436';
+    const targetNumber = (import.meta as any).env.VITE_WA_ADMIN_NUMBER || '6282186486436';
+    localStorage.setItem('SPENDA_PAYMENT_WA_NUMBER', targetNumber);
+    return targetNumber;
   });
   const [isConfiguringWa, setIsConfiguringWa] = useState(false);
   const [waInputTemp, setWaInputTemp] = useState(whatsappAdminNumber);
@@ -507,11 +507,9 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
                         <span>PREVIEW DETAIL PESAN WA:</span>
                         <span className="text-[7.5px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-sans font-bold">Autofill</span>
                       </div>
-                      <p className="truncate">Halo Admin SPENDA</p>
-                      <p className="truncate">Saya ingin mengaktifkan akun lisensi:</p>
-                      <p className="pl-1.5 truncate">- Nama: {tempRegistrationData?.name}</p>
-                      <p className="pl-1.5 truncate">- Email: {tempRegistrationData?.email}</p>
-                      <p className="pl-1.5 truncate">- Peran: {tempRegistrationData?.role}</p>
+                      <p className="whitespace-normal leading-relaxed">
+                        Halo Admin Spenda, mohon aktifkan akun operator sekolah saya dengan email: {tempRegistrationData?.email || email} (Nama: {tempRegistrationData?.name || fullName})
+                      </p>
                     </div>
                   </div>
 
@@ -519,16 +517,10 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
                     type="button"
                     onClick={() => {
                       const textMessage = 
-                        "Halo Admin EduData Spenda\n\n" +
-                        "Saya baru saja mendaftarkan akun di aplikasi Rombel Otomatis.\n\n" +
-                        "DETAIL AKUN REGISTER:\n" +
-                        "- Nama Operator: " + (tempRegistrationData?.name || fullName) + "\n" +
-                        "- Email Akun: " + (tempRegistrationData?.email || email) + "\n" +
-                        "- Jabatan/Peran: " + (tempRegistrationData?.role || role) + "\n\n" +
-                        "Mohon petunjuk untuk prosedur pembelian lisensi dan aktivasi akunya. Terima kasih!";
+                        `Halo Admin Spenda, mohon aktifkan akun operator sekolah saya dengan email: ${tempRegistrationData?.email || email} (Nama: ${tempRegistrationData?.name || fullName})`;
                       
                       const encodedText = encodeURIComponent(textMessage);
-                      const waLink = `https://wa.me/${whatsappAdminNumber}?text=${encodedText}`;
+                      const waLink = `https://api.whatsapp.com/send?phone=${whatsappAdminNumber}&text=${encodedText}`;
                       window.open(waLink, '_blank');
                     }}
                     className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] text-white rounded-xl text-xs font-black tracking-wide shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"

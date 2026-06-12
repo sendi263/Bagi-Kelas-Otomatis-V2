@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const supabaseUrl = env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
   const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
-  const waAdminNumber = env.VITE_WA_ADMIN_NUMBER || process.env.VITE_WA_ADMIN_NUMBER || '6282329380931';
+  const waAdminNumber = env.VITE_WA_ADMIN_NUMBER || process.env.VITE_WA_ADMIN_NUMBER || '6282186486436';
 
   return {
     plugins: [react(), tailwindcss()],
