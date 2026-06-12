@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, 
   GraduationCap, 
@@ -47,6 +48,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     return secureStorage.getItem<AuthUser | null>('SPENDA_ACTIVE_SESSION', null);
   });
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Operational states
   const [students, setStudents] = useState<Student[]>([]);
@@ -212,6 +214,19 @@ export default function App() {
     setSchoolSettings(DEFAULT_SCHOOL_SETTINGS);
     secureStorage.setItem('SPENDA_SCHOOL_SETTINGS', DEFAULT_SCHOOL_SETTINGS);
     schoolSettingsDb.save(DEFAULT_SCHOOL_SETTINGS).catch(err => console.error("Firestore settings reset failed", err));
+  };
+
+  const handleConfirmLogout = () => {
+    authService.logout().then(() => {
+      setCurrentUser(null);
+      secureStorage.removeItem('SPENDA_ACTIVE_SESSION');
+      setShowLogoutConfirm(false);
+    }).catch(err => {
+      console.error("Logout error", err);
+      setCurrentUser(null);
+      secureStorage.removeItem('SPENDA_ACTIVE_SESSION');
+      setShowLogoutConfirm(false);
+    });
   };
 
   // State manipulation handlers
@@ -503,18 +518,7 @@ export default function App() {
 
               {/* Action: Logout */}
               <button
-                onClick={() => {
-                  if (confirm("Apakah Anda yakin ingin keluar dari portal EduData?")) {
-                    authService.logout().then(() => {
-                      setCurrentUser(null);
-                      secureStorage.removeItem('SPENDA_ACTIVE_SESSION');
-                    }).catch(err => {
-                      console.error("Logout error", err);
-                      setCurrentUser(null);
-                      secureStorage.removeItem('SPENDA_ACTIVE_SESSION');
-                    });
-                  }
-                }}
+                onClick={() => setShowLogoutConfirm(true)}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-bold transition-all cursor-pointer hover:bg-red-800/30 text-amber-200 hover:text-red-100"
               >
                 <LogOut size={16} className="text-amber-400" />
@@ -648,6 +652,83 @@ export default function App() {
           <span>Server Load: <strong className="text-green-700">12%</strong></span>
         </div>
       </footer>
+
+      {/* 5. Custom Professional Logout Dialog Modal Pop-up */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop Blur overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowLogoutConfirm(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              id="logout-modal-backdrop"
+            />
+
+            {/* Modal Card content wrapper */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: "spring", duration: 0.4, bounce: 0.15 }}
+              className="relative w-full max-w-sm bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden p-6 text-center space-y-4 z-10"
+              id="logout-modal-card"
+            >
+              {/* Decorative Warning glow background banner */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-red-500 to-amber-500 animate-gradient-x" />
+
+              {/* Header Icon Indicator */}
+              <div className="mx-auto w-12 h-12 bg-red-50 text-red-650 rounded-full flex items-center justify-center shadow-inner mt-2">
+                <LogOut size={22} className="stroke-[2.5] text-red-600 rotate-180" />
+              </div>
+
+              {/* Title Header */}
+              <div className="space-y-1.5">
+                <h3 className="text-sm font-black text-slate-900 tracking-tight font-mono uppercase">
+                  Konfirmasi Keluar Sesi
+                </h3>
+                <p className="text-xs text-slate-550 leading-relaxed font-semibold">
+                  Apakah Anda yakin ingin keluar dari portal <span className="text-green-700 font-bold">EduData SPENDA</span>?
+                </p>
+              </div>
+
+              {/* Quick warning message details card */}
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-left space-y-2 text-[10.5px] leading-relaxed text-slate-650 font-medium">
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-500 font-bold select-none shrink-0">⚠️</span>
+                  <span>Sesi operator aktif Anda akan diakhiri secara aman dan aman dari peretasan.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-500 font-bold select-none shrink-0 font-mono">⚠️</span>
+                  <span>Pastikan seluruh proses sinkronisasi manual atau pengaturan data kesiswaan telah selesai disimpan sebelum Anda keluar.</span>
+                </div>
+              </div>
+
+              {/* Interaction buttons */}
+              <div className="flex items-center gap-3 pt-1.5">
+                <button
+                  type="button"
+                  id="btn-cancel-logout"
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-[11px] font-black select-none tracking-wide border border-slate-200/50 cursor-pointer transition-all active:scale-[0.98]"
+                >
+                  Batal / Tetap Masuk
+                </button>
+                <button
+                  type="button"
+                  id="btn-confirm-logout"
+                  onClick={handleConfirmLogout}
+                  className="flex-1 py-2.5 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-700 hover:to-amber-700 text-white rounded-xl text-[11px] font-black shadow-md shadow-red-250 cursor-pointer transition-all active:scale-[0.98]"
+                >
+                  Ya, Keluar Aplikasi
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
