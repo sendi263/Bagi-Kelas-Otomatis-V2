@@ -7,12 +7,14 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const supabaseUrl = env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
   const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+  const waAdminNumber = env.VITE_WA_ADMIN_NUMBER || process.env.VITE_WA_ADMIN_NUMBER || '6282329380931';
 
   return {
     plugins: [react(), tailwindcss()],
     define: {
       'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
       'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),
+      'import.meta.env.VITE_WA_ADMIN_NUMBER': JSON.stringify(waAdminNumber),
     },
     resolve: {
       alias: {

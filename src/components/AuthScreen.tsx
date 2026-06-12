@@ -43,7 +43,9 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
 
   // WhatsApp configuration state
   const [whatsappAdminNumber, setWhatsappAdminNumber] = useState(() => {
-    return localStorage.getItem('SPENDA_PAYMENT_WA_NUMBER') || '6282329380931';
+    return localStorage.getItem('SPENDA_PAYMENT_WA_NUMBER') || 
+           (import.meta as any).env.VITE_WA_ADMIN_NUMBER || 
+           '6282329380931';
   });
   const [isConfiguringWa, setIsConfiguringWa] = useState(false);
   const [waInputTemp, setWaInputTemp] = useState(whatsappAdminNumber);
