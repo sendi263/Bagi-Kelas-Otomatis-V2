@@ -507,11 +507,11 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
                         <span>PREVIEW DETAIL PESAN WA:</span>
                         <span className="text-[7.5px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-sans font-bold">Autofill</span>
                       </div>
-                      <p className="truncate">Halo Admin SPENDA 🌟</p>
+                      <p className="truncate">Halo Admin SPENDA</p>
                       <p className="truncate">Saya ingin mengaktifkan akun lisensi:</p>
-                      <p className="pl-1.5 truncate">• Nama: {tempRegistrationData?.name}</p>
-                      <p className="pl-1.5 truncate">• Email: {tempRegistrationData?.email}</p>
-                      <p className="pl-1.5 truncate">• Peran: {tempRegistrationData?.role}</p>
+                      <p className="pl-1.5 truncate">- Nama: {tempRegistrationData?.name}</p>
+                      <p className="pl-1.5 truncate">- Email: {tempRegistrationData?.email}</p>
+                      <p className="pl-1.5 truncate">- Peran: {tempRegistrationData?.role}</p>
                     </div>
                   </div>
 
@@ -519,13 +519,13 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
                     type="button"
                     onClick={() => {
                       const textMessage = 
-                        `Halo Admin EduData Spenda 🌟\n\n` +
-                        `Saya baru saja mendaftarkan akun di aplikasi Rombel Otomatis.\n\n` +
-                        `📝 DETAIL AKUN REGISTER:\n` +
-                        `• Nama Operator: ${tempRegistrationData?.name || fullName}\n` +
-                        `• Email Akun: ${tempRegistrationData?.email || email}\n` +
-                        `• Jabatan/Peran: ${tempRegistrationData?.role || role}\n\n` +
-                        `Mohon petunjuk untuk prosedur pembelian lisensi & aktivasi akunya. Terima kasih!`;
+                        "Halo Admin EduData Spenda\n\n" +
+                        "Saya baru saja mendaftarkan akun di aplikasi Rombel Otomatis.\n\n" +
+                        "DETAIL AKUN REGISTER:\n" +
+                        "- Nama Operator: " + (tempRegistrationData?.name || fullName) + "\n" +
+                        "- Email Akun: " + (tempRegistrationData?.email || email) + "\n" +
+                        "- Jabatan/Peran: " + (tempRegistrationData?.role || role) + "\n\n" +
+                        "Mohon petunjuk untuk prosedur pembelian lisensi dan aktivasi akunya. Terima kasih!";
                       
                       const encodedText = encodeURIComponent(textMessage);
                       const waLink = `https://wa.me/${whatsappAdminNumber}?text=${encodedText}`;
