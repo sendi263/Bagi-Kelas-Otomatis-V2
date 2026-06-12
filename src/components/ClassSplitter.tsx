@@ -42,33 +42,207 @@ export default function ClassSplitter({
   currentUserRole,
 }: ClassSplitterProps) {
   // Step workflow status and Level Tabs
-  const [step, setStep] = useState<'setup' | 'results'>('setup');
-  const [activeLevel, setActiveLevel] = useState<'7' | '8' | '9'>('7');
+  const [step, setStep] = useState<'setup' | 'results'>(() => {
+    return (localStorage.getItem('SPENDA_SPLITTER_STEP') as 'setup' | 'results') || 'setup';
+  });
+  const [activeLevel, setActiveLevel] = useState<'7' | '8' | '9'>(() => {
+    return (localStorage.getItem('SPENDA_SPLITTER_LEVEL') as '7' | '8' | '9') || '7';
+  });
 
   // Config States per level
-  const [maxStudents7, setMaxStudents7] = useState(32);
-  const [maxStudents8, setMaxStudents8] = useState(32);
-  const [maxStudents9, setMaxStudents9] = useState(32);
+  const [maxStudents7, setMaxStudents7] = useState<number>(() => {
+    const val = localStorage.getItem('SPENDA_SPLITTER_MAX_K7');
+    return val ? parseInt(val, 10) : 32;
+  });
+  const [maxStudents8, setMaxStudents8] = useState<number>(() => {
+    const val = localStorage.getItem('SPENDA_SPLITTER_MAX_K8');
+    return val ? parseInt(val, 10) : 32;
+  });
+  const [maxStudents9, setMaxStudents9] = useState<number>(() => {
+    const val = localStorage.getItem('SPENDA_SPLITTER_MAX_K9');
+    return val ? parseInt(val, 10) : 32;
+  });
 
-  const [customClassCount7, setCustomClassCount7] = useState<number | null>(null);
-  const [customClassCount8, setCustomClassCount8] = useState<number | null>(null);
-  const [customClassCount9, setCustomClassCount9] = useState<number | null>(null);
+  const [customClassCount7, setCustomClassCount7] = useState<number | null>(() => {
+    const val = localStorage.getItem('SPENDA_SPLITTER_CUSTOM_COUNT_K7');
+    return val ? (val === 'null' ? null : parseInt(val, 10)) : null;
+  });
+  const [customClassCount8, setCustomClassCount8] = useState<number | null>(() => {
+    const val = localStorage.getItem('SPENDA_SPLITTER_CUSTOM_COUNT_K8');
+    return val ? (val === 'null' ? null : parseInt(val, 10)) : null;
+  });
+  const [customClassCount9, setCustomClassCount9] = useState<number | null>(() => {
+    const val = localStorage.getItem('SPENDA_SPLITTER_CUSTOM_COUNT_K9');
+    return val ? (val === 'null' ? null : parseInt(val, 10)) : null;
+  });
 
-  const [sourceMode7, setSourceMode7] = useState<'spmb' | 'all' | 'existing'>('spmb');
+  const [sourceMode7, setSourceMode7] = useState<'spmb' | 'all' | 'existing'>(() => {
+    return (localStorage.getItem('SPENDA_SPLITTER_SOURCE_K7') as 'spmb' | 'all' | 'existing') || 'spmb';
+  });
 
   // Separate distribution methods per level
-  const [distMethod7, setDistMethod7] = useState<'heterogen' | 'acak'>('heterogen');
-  const [distMethod8, setDistMethod8] = useState<'heterogen' | 'acak'>('heterogen');
-  const [distMethod9, setDistMethod9] = useState<'heterogen' | 'acak'>('heterogen');
+  const [distMethod7, setDistMethod7] = useState<'heterogen' | 'acak'>(() => {
+    return (localStorage.getItem('SPENDA_SPLITTER_METHOD_K7') as 'heterogen' | 'acak') || 'heterogen';
+  });
+  const [distMethod8, setDistMethod8] = useState<'heterogen' | 'acak'>(() => {
+    return (localStorage.getItem('SPENDA_SPLITTER_METHOD_K8') as 'heterogen' | 'acak') || 'heterogen';
+  });
+  const [distMethod9, setDistMethod9] = useState<'heterogen' | 'acak'>(() => {
+    return (localStorage.getItem('SPENDA_SPLITTER_METHOD_K9') as 'heterogen' | 'acak') || 'heterogen';
+  });
 
   // Unified Multi-level Split Results
   const [results, setResults] = useState<{
     '7'?: { stats: ClassBalanceStats[]; assignedStudents: Student[] };
     '8'?: { stats: ClassBalanceStats[]; assignedStudents: Student[] };
     '9'?: { stats: ClassBalanceStats[]; assignedStudents: Student[] };
-  }>({});
+  }>(() => {
+    const val = localStorage.getItem('SPENDA_SPLITTER_RESULTS');
+    return val ? JSON.parse(val) : {};
+  });
 
-  const [activePreviewClass, setActivePreviewClass] = useState<string>('');
+  const [activePreviewClass, setActivePreviewClass] = useState<string>(() => {
+    return localStorage.getItem('SPENDA_SPLITTER_ACTIVE_PREVIEW_CLASS') || '';
+  });
+
+  // Persist states to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('SPENDA_SPLITTER_STEP', step);
+  }, [step]);
+
+  useEffect(() => {
+    localStorage.setItem('SPENDA_SPLITTER_LEVEL', activeLevel);
+  }, [activeLevel]);
+
+  useEffect(() => {
+    localStorage.setItem('SPENDA_SPLITTER_MAX_K7', maxStudents7.toString());
+  }, [maxStudents7]);
+
+  useEffect(() => {
+    localStorage.setItem('SPENDA_SPLITTER_MAX_K8', maxStudents8.toString());
+  }, [maxStudents8]);
+
+  useEffect(() => {
+    localStorage.setItem('SPENDA_SPLITTER_MAX_K9', maxStudents9.toString());
+  }, [maxStudents9]);
+
+  useEffect(() => {
+    localStorage.setItem('SPENDA_SPLITTER_CUSTOM_COUNT_K7', customClassCount7 === null ? 'null' : customClassCount7.toString());
+  }, [customClassCount7]);
+
+  useEffect(() => {
+    localStorage.setItem('SPENDA_SPLITTER_CUSTOM_COUNT_K8', customClassCount8 === null ? 'null' : customClassCount8.toString());
+  }, [customClassCount8]);
+
+  useEffect(() => {
+    localStorage.setItem('SPENDA_SPLITTER_CUSTOM_COUNT_K9', customClassCount9 === null ? 'null' : customClassCount9.toString());
+  }, [customClassCount9]);
+
+  useEffect(() => {
+    localStorage.setItem('SPENDA_SPLITTER_SOURCE_K7', sourceMode7);
+  }, [sourceMode7]);
+
+  useEffect(() => {
+    localStorage.setItem('SPENDA_SPLITTER_METHOD_K7', distMethod7);
+  }, [distMethod7]);
+
+  useEffect(() => {
+    localStorage.setItem('SPENDA_SPLITTER_METHOD_K8', distMethod8);
+  }, [distMethod8]);
+
+  useEffect(() => {
+    localStorage.setItem('SPENDA_SPLITTER_METHOD_K9', distMethod9);
+  }, [distMethod9]);
+
+  useEffect(() => {
+    localStorage.setItem('SPENDA_SPLITTER_RESULTS', JSON.stringify(results));
+  }, [results]);
+
+  useEffect(() => {
+    localStorage.setItem('SPENDA_SPLITTER_ACTIVE_PREVIEW_CLASS', activePreviewClass);
+  }, [activePreviewClass]);
+
+  // Auto-sync results with actual master students array
+  useEffect(() => {
+    if (results && Object.keys(results).length > 0) {
+      let changed = false;
+      const updatedResults = { ...results };
+
+      (['7', '8', '9'] as const).forEach((lvl) => {
+        const lvlRes = updatedResults[lvl];
+        if (lvlRes) {
+          // Filter out deleted students and keep only active ones
+          const validAssigned = lvlRes.assignedStudents.filter((assignedStd) => {
+            const masterStd = students.find((s) => s.id === assignedStd.id);
+            return masterStd && masterStd.status === 'Aktif';
+          }).map((assignedStd) => {
+            const masterStd = students.find((s) => s.id === assignedStd.id)!;
+            const updatedStd = { ...masterStd, currentClass: assignedStd.currentClass };
+            if (JSON.stringify(assignedStd) !== JSON.stringify(updatedStd)) {
+              changed = true;
+            }
+            return updatedStd;
+          });
+
+          if (validAssigned.length !== lvlRes.assignedStudents.length) {
+            changed = true;
+          }
+
+          if (changed) {
+            // Recompute stats
+            const classNames = lvlRes.stats.map(st => st.className);
+            const K = classNames.length;
+            const buckets: Student[][] = Array.from({ length: K }, () => []);
+            
+            validAssigned.forEach(std => {
+              const classIdx = classNames.indexOf(std.currentClass || '');
+              if (classIdx !== -1) {
+                buckets[classIdx].push(std);
+              }
+            });
+
+            const newStats = classNames.map((name, i) => {
+              buckets[i].sort((a, b) => a.name.localeCompare(b.name));
+              const classStudents = buckets[i];
+              const total = classStudents.length;
+              const maleCount = classStudents.filter((s) => s.gender === 'L').length;
+              const femaleCount = classStudents.filter((s) => s.gender === 'P').length;
+              
+              let sumGrade = 0;
+              let minGrade = total > 0 ? 100 : 0;
+              let maxGrade = 0;
+              
+              classStudents.forEach((s) => {
+                sumGrade += s.averageGrade;
+                if (s.averageGrade < minGrade) minGrade = s.averageGrade;
+                if (s.averageGrade > maxGrade) maxGrade = s.averageGrade;
+              });
+
+              return {
+                className: name,
+                studentsCount: total,
+                maleCount,
+                femaleCount,
+                averageGrade: total > 0 ? parseFloat((sumGrade / total).toFixed(2)) : 0,
+                minGrade: total > 0 ? minGrade : 0,
+                maxGrade,
+                students: classStudents,
+              };
+            });
+
+            updatedResults[lvl] = {
+              stats: newStats,
+              assignedStudents: validAssigned
+            };
+          }
+        }
+      });
+
+      if (changed) {
+        setResults(updatedResults);
+      }
+    }
+  }, [students]);
   
   // Persistent Class requests/locks
   const [classRequests, setClassRequests] = useState<Record<string, string>>(() => {
