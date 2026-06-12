@@ -351,13 +351,47 @@ export const registeredUsersDb = {
         const { data, error } = await supabase
           .from('registered_users')
           .select('*');
+        
+        let rawList = data || [];
         if (error) {
-          // Alternative fallback plural/alternate name if they made one
           const alt = await supabase.from('registeredUsers').select('*');
           if (alt.error) throw error;
-          return (alt.data || []).map((row: any) => row.data || row);
+          rawList = alt.data || [];
         }
-        return (data || []).map((row: any) => row.data || row);
+
+        return rawList.map((row: any) => {
+          let userObj = null;
+          
+          if (row.data) {
+            if (typeof row.data === 'string') {
+              try {
+                userObj = JSON.parse(row.data);
+              } catch (e) {
+                userObj = null;
+              }
+            } else if (typeof row.data === 'object') {
+              userObj = row.data;
+            }
+          }
+          
+          if (!userObj || typeof userObj !== 'object') {
+            userObj = { ...row };
+          } else {
+            userObj = {
+              ...userObj,
+              email: row.email || userObj.email,
+              activatePaid: row.activatePaid !== undefined ? row.activatePaid : userObj.activatePaid,
+              password: row.password || userObj.password,
+              role: row.role || userObj.role,
+              name: row.name || userObj.name
+            };
+          }
+
+          if (userObj && userObj.email) {
+            userObj.email = userObj.email.toLowerCase();
+          }
+          return userObj;
+        });
       } catch (err) {
         console.warn("Supabase registered_users load failed, using local backup fallback:", err);
       }

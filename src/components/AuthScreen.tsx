@@ -135,9 +135,6 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
 
         // Update local storage cache instantly
         secureStorage.setItem('SPENDA_REGISTERED_USERS', mergedList);
-
-        // Save batch of non-demo users to Supabase if config is connected
-        await registeredUsersDb.saveBatch(mergedList);
       } catch (err) {
         console.warn("Could not sync registered users to remote Supabase server:", err);
       }
@@ -176,17 +173,91 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-    setSuccessMsg('');
+    setSuccessMsg('Memverifikasi kredensial...');
 
     if (!email || !password) {
       setErrorMsg('Silakan masukkan email dan kata sandi Anda.');
+      setSuccessMsg('');
       return;
     }
 
-    const users = secureStorage.getItem<any[]>('SPENDA_REGISTERED_USERS', []);
+    const defaultUsers = [
+      {
+        email: 'sendi263@guru.smp.belajar.id',
+        password: 'operator-spenda',
+        name: 'Sendi Tio Alsi',
+        role: 'Operator Utama',
+        avatarInitial: 'ST',
+        activatePaid: true
+      },
+      {
+        email: 'admin@smp.belajar.id',
+        password: 'admin-spenda',
+        name: 'Administrator Utama',
+        role: 'Operator Utama',
+        avatarInitial: 'AU',
+        activatePaid: true
+      },
+      {
+        email: 'staf.kesiswaan@smp.belajar.id',
+        password: 'staff123',
+        name: 'Siti Rahmawati',
+        role: 'Staf Kesiswaan',
+        avatarInitial: 'SR',
+        activatePaid: true
+      },
+      {
+        email: 'demo@smp.belajar.id',
+        password: 'demo123',
+        name: 'Operator Demo',
+        role: 'Demo',
+        avatarInitial: 'OD',
+        activatePaid: true
+      }
+    ];
+
+    let users = secureStorage.getItem<any[]>('SPENDA_REGISTERED_USERS', []);
+
+    // Perform fresh real-time sync with Supabase database to grab the updated active paid statuses instantly!
+    try {
+      const remoteUsers = await registeredUsersDb.getAll();
+      if (Array.isArray(remoteUsers) && remoteUsers.length > 0) {
+        const mergedMap = new Map<string, any>();
+        
+        // Load defaults
+        defaultUsers.forEach(u => mergedMap.set(u.email.toLowerCase(), u));
+        // Load local
+        users.forEach(u => {
+          if (u && u.email) mergedMap.set(u.email.toLowerCase(), u);
+        });
+        // Load remote (remote has authoritative precedence for cloud/admin activations)
+        remoteUsers.forEach(u => {
+          if (u && u.email) {
+            const emailKey = u.email.toLowerCase();
+            const existing = mergedMap.get(emailKey);
+            if (existing) {
+              mergedMap.set(emailKey, {
+                ...existing,
+                ...u,
+                password: u.password || existing.password || '',
+                activatePaid: u.activatePaid !== undefined ? u.activatePaid : existing.activatePaid
+              });
+            } else {
+              mergedMap.set(emailKey, u);
+            }
+          }
+        });
+
+        const mergedList = Array.from(mergedMap.values());
+        secureStorage.setItem('SPENDA_REGISTERED_USERS', mergedList);
+        users = mergedList;
+      }
+    } catch (err) {
+      console.warn("Could not sync database metadata in real-time, falling back to local cache:", err);
+    }
 
     const matchedUser = users.find(
       (u: any) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
@@ -195,6 +266,7 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
     if (matchedUser) {
       if (matchedUser.activatePaid === false) {
         setErrorMsg('pembayaran belum divalidasi. Akun Anda telah terdaftar, tetapi belum aktif. Silakan hubungi Admin WhatsApp untuk proses aktivasi instant & pemberian seluruh hak akses.');
+        setSuccessMsg('');
         return;
       }
       setSuccessMsg('Login berhasil! Mengalihkan ke Dashboard...');
@@ -214,6 +286,7 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
       }, 1000);
     } else {
       setErrorMsg('Email atau password tidak valid. Registrasikan akun baru atau pilih jalan pintas demo di bawah.');
+      setSuccessMsg('');
     }
   };
 
