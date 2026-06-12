@@ -68,28 +68,32 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
           password: 'operator-spenda',
           name: 'Sendi Tio Alsi',
           role: 'Operator Utama',
-          avatarInitial: 'ST'
+          avatarInitial: 'ST',
+          activatePaid: true
         },
         {
           email: 'admin@smp.belajar.id',
           password: 'admin-spenda',
           name: 'Administrator Utama',
           role: 'Operator Utama',
-          avatarInitial: 'AU'
+          avatarInitial: 'AU',
+          activatePaid: true
         },
         {
           email: 'staf.kesiswaan@smp.belajar.id',
           password: 'staff123',
           name: 'Siti Rahmawati',
           role: 'Staf Kesiswaan',
-          avatarInitial: 'SR'
+          avatarInitial: 'SR',
+          activatePaid: true
         },
         {
           email: 'demo@smp.belajar.id',
           password: 'demo123',
           name: 'Operator Demo',
           role: 'Demo',
-          avatarInitial: 'OD'
+          avatarInitial: 'OD',
+          activatePaid: true
         }
       ];
 
@@ -178,6 +182,10 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
     );
 
     if (matchedUser) {
+      if (matchedUser.activatePaid === false) {
+        setErrorMsg('pembayaran belum divalidasi. Akun Anda telah terdaftar, tetapi belum aktif. Silakan hubungi Admin WhatsApp untuk proses aktivasi instant & pemberian seluruh hak akses.');
+        return;
+      }
       setSuccessMsg('Login berhasil! Mengalihkan ke Dashboard...');
       const authUser: AuthUser = {
         id: matchedUser.email,
@@ -221,13 +229,32 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
       return;
     }
 
-    // Save temporal registration data, trigger payment step screen
-    setTempRegistrationData({
+    const initials = fullName.trim()
+      .split(' ')
+      .map((word: string) => word[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase() || 'OP';
+
+    const newUser = {
       email: email.trim(),
       password,
       name: fullName.trim(),
-      role
+      role,
+      avatarInitial: initials,
+      activatePaid: false, // Save as non-active, waiting for Admin validation
+      activationTime: null
+    };
+
+    const updatedUsers = [...users, newUser];
+    secureStorage.setItem('SPENDA_REGISTERED_USERS', updatedUsers);
+    
+    // Save to remote Supabase database
+    registeredUsersDb.save(newUser).catch(err => {
+      console.warn("Failed saving new registered user to Supabase:", err);
     });
+
+    setTempRegistrationData(newUser);
     setIsPaymentStep(true);
   };
 

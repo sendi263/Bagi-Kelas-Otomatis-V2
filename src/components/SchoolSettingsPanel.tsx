@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Building2, 
   Upload, 
@@ -14,9 +14,19 @@ import {
   FileText, 
   RefreshCw,
   HelpCircle,
-  Hash
+  Hash,
+  ShieldCheck,
+  Trash2,
+  UserCheck,
+  UserX,
+  UserCog,
+  Unlock,
+  Lock,
+  Clock
 } from 'lucide-react';
 import { SchoolSettings } from '../types';
+import { secureStorage } from '../utils/security';
+import { registeredUsersDb } from '../utils/supabase';
 
 interface SchoolSettingsPanelProps {
   settings: SchoolSettings;
@@ -35,6 +45,117 @@ export default function SchoolSettingsPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const kopFileInputRef = useRef<HTMLInputElement>(null);
   const stampFileInputRef = useRef<HTMLInputElement>(null);
+
+  const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const local = secureStorage.getItem<any[]>('SPENDA_REGISTERED_USERS', []);
+        setRegisteredUsers(local);
+
+        const remote = await registeredUsersDb.getAll();
+        if (remote && remote.length > 0) {
+          const mergedMap = new Map();
+          local.forEach(u => mergedMap.set(u.email.toLowerCase(), u));
+          remote.forEach(u => mergedMap.set(u.email.toLowerCase(), u));
+          const list = Array.from(mergedMap.values());
+          setRegisteredUsers(list);
+          secureStorage.setItem('SPENDA_REGISTERED_USERS', list);
+        }
+      } catch (err) {
+        console.warn('Failed loading registered users:', err);
+      }
+    };
+    loadUsers();
+  }, []);
+
+  const handleActivateUser = async (email: string) => {
+    const updated = registeredUsers.map(u => {
+      if (u.email.toLowerCase() === email.toLowerCase()) {
+        return { ...u, activatePaid: true, activationTime: new Date().toISOString() };
+      }
+      return u;
+    });
+    setRegisteredUsers(updated);
+    secureStorage.setItem('SPENDA_REGISTERED_USERS', updated);
+
+    const userToSave = updated.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (userToSave) {
+      try {
+        await registeredUsersDb.save(userToSave);
+      } catch (err) {
+        console.warn('Could not sync user activation to Supabase:', err);
+      }
+    }
+  };
+
+  const handleDeactivateUser = async (email: string) => {
+    const protectedEmails = ['admin@smp.belajar.id', 'sendi263@guru.smp.belajar.id'];
+    if (protectedEmails.includes(email.toLowerCase())) {
+      alert('Akun admin utama sistem bawaan tidak dapat dinonaktifkan.');
+      return;
+    }
+
+    const updated = registeredUsers.map(u => {
+      if (u.email.toLowerCase() === email.toLowerCase()) {
+        return { ...u, activatePaid: false, activationTime: null };
+      }
+      return u;
+    });
+    setRegisteredUsers(updated);
+    secureStorage.setItem('SPENDA_REGISTERED_USERS', updated);
+
+    const userToSave = updated.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (userToSave) {
+      try {
+        await registeredUsersDb.save(userToSave);
+      } catch (err) {
+        console.warn('Could not sync user deactivation to Supabase:', err);
+      }
+    }
+  };
+
+  const handleDeleteUser = async (email: string) => {
+    const protectedEmails = ['admin@smp.belajar.id', 'sendi263@guru.smp.belajar.id', 'demo@smp.belajar.id'];
+    if (protectedEmails.includes(email.toLowerCase())) {
+      alert('Akun bawaan sistem tidak dapat dihapus.');
+      return;
+    }
+
+    if (window.confirm(`Apakah Anda yakin ingin menghapus permanen operator dengan email ${email}?`)) {
+      const updated = registeredUsers.filter(u => u.email.toLowerCase() !== email.toLowerCase());
+      setRegisteredUsers(updated);
+      secureStorage.setItem('SPENDA_REGISTERED_USERS', updated);
+      
+      try {
+        // Find in remote to verify delete, or rewrite batch:
+        await registeredUsersDb.saveBatch(updated);
+      } catch (err) {
+        console.warn('Could not sync user removal to Supabase:', err);
+      }
+    }
+  };
+
+  const handleChangeUserRole = async (email: string, newRole: string) => {
+    const updated = registeredUsers.map(u => {
+      if (u.email.toLowerCase() === email.toLowerCase()) {
+        return { ...u, role: newRole };
+      }
+      return u;
+    });
+    setRegisteredUsers(updated);
+    secureStorage.setItem('SPENDA_REGISTERED_USERS', updated);
+
+    const userToSave = updated.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (userToSave) {
+      try {
+        await registeredUsersDb.save(userToSave);
+      } catch (err) {
+        console.warn('Could not sync user role change to Supabase:', err);
+      }
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -844,6 +965,152 @@ export default function SchoolSettingsPanel({
         </div>
 
       </div>
+
+      {/* SECTION B: KELOLA OPERATOR & AKTIVASI LISENSI */}
+      <div className="bg-white border border-slate-150 rounded-2xl p-5 md:p-6 shadow-sm space-y-5 mt-6" id="operator-management-card">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="space-y-1">
+            <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2">
+              <ShieldCheck className="text-emerald-600 w-5 h-5" />
+              Kelola Akun & Aktivasi Operator WhatsApp
+            </h3>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Daftar seluruh operator sekolah yang telah mendaftar. Sebagai Admin Utama, Anda dapat memvalidasi pembayaran mereka secara manual, mengaktifkan akun, serta memberikan seluruh hak akses pekerjaan.
+            </p>
+          </div>
+          <div className="bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-150 text-emerald-700 text-xs font-mono font-medium flex items-center gap-1.5 self-start sm:self-center shrink-0">
+            <Unlock size={14} className="text-emerald-600" />
+            <span>Mekanisme WhatsApp Terhubung</span>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto border border-slate-100 rounded-xl">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-wider border-b border-slate-100">
+                <th className="p-3.5 pl-4">Operator</th>
+                <th className="p-3.5">E-mail</th>
+                <th className="p-3.5">Peran / Jabatan</th>
+                <th className="p-3.5 text-center">Status Akses</th>
+                <th className="p-3.5 text-center">Tanggal Aktivasi</th>
+                <th className="p-3.5 text-right pr-4">Aksi Validasi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+              {registeredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-slate-400 italic font-medium">
+                    Belum ada operator lain yang mendaftar.
+                  </td>
+                </tr>
+              ) : (
+                registeredUsers.map((user) => {
+                  const isSystemDefault = ['admin@smp.belajar.id', 'sendi263@guru.smp.belajar.id', 'demo@smp.belajar.id'].includes(user.email.toLowerCase());
+                  return (
+                    <tr key={user.email} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="p-3.5 pl-4 flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 text-[11px] font-black flex items-center justify-center shadow-sm shrink-0 uppercase">
+                          {user.avatarInitial || 'OP'}
+                        </div>
+                        <div>
+                          <span className="font-extrabold text-slate-900 block leading-tight">{user.name}</span>
+                          <span className="text-[10px] text-slate-450 block font-mono">ID: {user.email}</span>
+                        </div>
+                      </td>
+                      <td className="p-3.5 font-mono text-[11px] text-slate-600">{user.email}</td>
+                      <td className="p-3.5">
+                        {isSystemDefault ? (
+                          <span className="inline-block bg-slate-100 border border-slate-150 text-slate-700 px-2 py-0.5 rounded-md text-[10.5px] font-bold">
+                            {user.role}
+                          </span>
+                        ) : (
+                          <select
+                            value={user.role}
+                            onChange={(e) => handleChangeUserRole(user.email, e.target.value)}
+                            className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-800 font-medium focus:outline-none focus:border-green-600"
+                          >
+                            <option value="Operator Utama">Operator Utama</option>
+                            <option value="Staf Kesiswaan">Staf Kesiswaan</option>
+                            <option value="Wakasek Kurikulum">Wakasek Kurikulum</option>
+                            <option value="Kepala Sekolah">Kepala Sekolah</option>
+                          </select>
+                        )}
+                      </td>
+                      <td className="p-3.5 text-center">
+                        {user.activatePaid ? (
+                          <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide">
+                            <UserCheck size={11} className="stroke-[2.5]" />
+                            <span>Aktif (Full Akses)</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide animate-pulse">
+                            <Clock size={11} className="stroke-[2.5]" />
+                            <span>Menunggu Validasi</span>
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3.5 text-center font-mono text-[10px] text-slate-500">
+                        {user.activatePaid && user.activationTime ? (
+                          new Date(user.activationTime).toLocaleString('id-ID', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
+                        ) : (
+                          <span className="text-slate-400 italic">-</span>
+                        )}
+                      </td>
+                      <td className="p-3.5 text-right pr-4">
+                        <div className="flex items-center justify-end gap-2.5">
+                          {user.activatePaid ? (
+                            !isSystemDefault && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeactivateUser(user.email)}
+                                className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800 rounded-lg text-[10px] font-extrabold flex items-center gap-1 border border-amber-200/50 transition-colors cursor-pointer"
+                                title="Nonaktifkan Hak Akses"
+                              >
+                                <Lock size={11} />
+                                <span>Tarik Akses</span>
+                              </button>
+                            )
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleActivateUser(user.email)}
+                              className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[10px] font-black flex items-center gap-1 shadow-sm hover:shadow active:scale-[0.98] transition-all cursor-pointer"
+                              title="Aktifkan & Berikan Seluruh Hak Akses"
+                            >
+                              <UserCheck size={11} className="stroke-[2.5]" />
+                              <span>Validasi & Aktifkan</span>
+                            </button>
+                          )}
+                          {!isSystemDefault && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteUser(user.email)}
+                              className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-800 rounded-lg transition-colors cursor-pointer"
+                              title="Hapus Operator"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                          {isSystemDefault && (
+                            <span className="text-[10px] text-slate-400 font-bold italic mr-1">Bawaan</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   );
 }
