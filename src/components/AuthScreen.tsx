@@ -725,43 +725,7 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
                 </div>
               </div>
 
-              {/* Supabase Connection Status Panel */}
-              <div className="border-t border-green-100 pt-3.5 space-y-2">
-                <div className="flex items-center justify-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${isConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                  <span className="text-[10px] font-bold text-slate-700 font-mono tracking-tight uppercase">
-                    Status Supabase: {isConfigured ? '🟢 TERKONEKSI' : '🔴 BELUM TERHUBUNG'}
-                  </span>
-                </div>
-                {isConfigured ? (
-                  <div className="space-y-1 text-center">
-                    <p className="text-[8.5px] text-emerald-700 font-mono break-all font-medium">
-                      Host: {supabaseUrl}
-                    </p>
-                    <p className="text-[8px] text-slate-500 font-sans leading-tight">
-                      Dua arah sinkronisasi aktif! Semua akun pendaftaran disimpan aman ke tabel <code className="font-mono font-bold text-green-700 bg-green-50 px-1 py-0.2 rounded">registered_users</code> di database Supabase Anda.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-1.5">
-                    <p className="text-[8.5px] text-slate-500 font-sans leading-normal text-center bg-amber-50/50 p-1.5 rounded-lg border border-amber-100/50">
-                      Berjalan mandiri dalam <strong>Mode Offline (Penyimpanan Lokal Aman)</strong>. Kredensial URL & Kunci Anonim belum terdeteksi dari konfigurasi sistem.
-                    </p>
-                    <div className="bg-red-50/40 rounded-xl p-2.5 border border-red-100 text-[8.5px] text-red-800 space-y-1 font-mono leading-relaxed">
-                      <div className="font-bold text-red-900 border-b border-red-100 pb-0.5 mb-1 flex items-center justify-between">
-                        <span>CARA MENGHUBUNGKAN:</span>
-                        <span className="text-[7.5px] bg-red-100 text-red-900 px-1 py-0.2 rounded font-mono uppercase font-black">Langkah</span>
-                      </div>
-                      <p>1. Klik ikon ⚙️ <strong>Settings</strong> di panel samping kiri Supabase, masuk ke sub-menu <strong>API Keys</strong>.</p>
-                      <p>2. Salin <strong>Project URL</strong> dan <strong>anon public key</strong> (seperti di screenshot Anda).</p>
-                      <p>3. Di AI Studio, buka panel Pengaturan/Secrets dan masukkan sebagai variabel:</p>
-                      <p className="pl-2 text-zinc-900 font-bold font-sans select-all">• VITE_SUPABASE_URL</p>
-                      <p className="pl-2 text-zinc-900 font-bold font-sans select-all">• VITE_SUPABASE_ANON_KEY</p>
-                      <p className="text-[7.5px] text-slate-500 pt-0.5">※ Sistem akan mendeteksi otomatis dan melakukan sinkronisasi instan tanpa kehilangan data lokal!</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+
             </>
           )}
         </motion.div>
