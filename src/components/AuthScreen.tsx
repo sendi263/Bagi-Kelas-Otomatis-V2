@@ -372,152 +372,60 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
                 </div>
               </div>
 
-              {/* Payment Methods selector */}
-              <div className="grid grid-cols-3 gap-1 bg-green-50 p-1 rounded-xl border border-green-100">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('wa')}
-                  className={`py-2 text-[9.5px] font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                    paymentMethod === 'wa'
-                      ? 'bg-white text-emerald-700 border border-emerald-200 shadow-sm font-black'
-                      : 'text-green-600 hover:text-green-800'
-                  }`}
-                >
-                  <MessageCircle size={11} className="text-emerald-500 fill-emerald-500/10" />
-                  <span>WA (Utama)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('qris')}
-                  className={`py-2 text-[9.5px] font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                    paymentMethod === 'qris'
-                      ? 'bg-white text-green-700 border border-green-200 shadow-sm'
-                      : 'text-green-600 hover:text-green-800'
-                  }`}
-                >
-                  <QrCode size={11} />
-                  <span>QRIS</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('transfer')}
-                  className={`py-2 text-[9.5px] font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                    paymentMethod === 'transfer'
-                      ? 'bg-white text-green-700 border border-green-200 shadow-sm'
-                      : 'text-green-600 hover:text-green-800'
-                  }`}
-                >
-                  <CreditCard size={11} />
-                  <span>Transfer</span>
-                </button>
-              </div>
-
+              {/* Custom WhatsApp Admin activation layout directly without secondary tabs */}
               <div className="bg-white p-4 rounded-xl border border-green-100 space-y-4">
-                {paymentMethod === 'wa' ? (
-                  <div className="space-y-3.5 text-center">
-                    <div className="bg-emerald-50/50 rounded-2xl p-4 border border-emerald-100 space-y-3">
-                      <div className="flex justify-center">
-                        <div className="w-12 h-12 bg-emerald-500/10 text-emerald-600 rounded-full flex items-center justify-center border border-emerald-200 animate-pulse">
-                          <MessageCircle size={22} className="fill-emerald-500/10 text-emerald-600" />
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className="text-xs font-bold text-emerald-950 uppercase tracking-wide">
-                          Aktivasi Instan via WhatsApp
-                        </h3>
-                        <p className="text-[10px] text-emerald-800/90 leading-relaxed mt-1">
-                          Sistem akan meneruskan Anda langsung ke WhatsApp Admin Developer untuk verifikasi pembayaran & pendaftaran akun secara aman.
-                        </p>
-                      </div>
-
-                      {/* Structured Message Template Preview */}
-                      <div className="bg-white p-3 rounded-xl border border-emerald-150/70 text-left text-[9.5px] space-y-1 font-mono text-emerald-900 border-dashed">
-                        <div className="font-bold text-emerald-950 border-b border-emerald-50 pb-1 mb-1.5 flex items-center justify-between">
-                          <span>PREVIEW DETAIL PESAN WA:</span>
-                          <span className="text-[7.5px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-sans font-bold">Autofill</span>
-                        </div>
-                        <p className="truncate">Halo Admin SPENDA 🌟</p>
-                        <p className="truncate">Saya ingin mengaktifkan akun lisensi:</p>
-                        <p className="pl-1.5 truncate">• Nama: {tempRegistrationData?.name}</p>
-                        <p className="pl-1.5 truncate">• Email: {tempRegistrationData?.email}</p>
-                        <p className="pl-1.5 truncate">• Peran: {tempRegistrationData?.role}</p>
+                <div className="space-y-3.5 text-center">
+                  <div className="bg-emerald-50/50 rounded-2xl p-4 border border-emerald-100 space-y-3">
+                    <div className="flex justify-center">
+                      <div className="w-12 h-12 bg-emerald-500/10 text-emerald-600 rounded-full flex items-center justify-center border border-emerald-200 animate-pulse">
+                        <MessageCircle size={22} className="fill-emerald-500/10 text-emerald-600" />
                       </div>
                     </div>
+                    <div>
+                      <h3 className="text-xs font-bold text-emerald-950 uppercase tracking-wide">
+                        Aktivasi Instan via WhatsApp
+                      </h3>
+                      <p className="text-[10px] text-emerald-800/90 leading-relaxed mt-1">
+                        Sistem akan meneruskan Anda langsung ke WhatsApp Admin Developer untuk verifikasi pembayaran & pendaftaran akun secara aman.
+                      </p>
+                    </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const textMessage = 
-                          `Halo Admin EduData Spenda 🌟\n\n` +
-                          `Saya baru saja mendaftarkan akun di aplikasi Rombel Otomatis.\n\n` +
-                          `📝 DETAIL AKUN REGISTER:\n` +
-                          `• Nama Operator: ${tempRegistrationData?.name || fullName}\n` +
-                          `• Email Akun: ${tempRegistrationData?.email || email}\n` +
-                          `• Jabatan/Peran: ${tempRegistrationData?.role || role}\n\n` +
-                          `Mohon petunjuk untuk prosedur pembelian lisensi & aktivasi akunya. Terima kasih!`;
-                        
-                        const encodedText = encodeURIComponent(textMessage);
-                        const waLink = `https://wa.me/${whatsappAdminNumber}?text=${encodedText}`;
-                        window.open(waLink, '_blank');
-                      }}
-                      className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] text-white rounded-xl text-xs font-black tracking-wide shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
-                    >
-                      <MessageSquare size={14} className="fill-white/10" />
-                      <span>HUBUNGI ADMIN WHATSAPP</span>
-                    </button>
-                  </div>
-                ) : paymentMethod === 'qris' ? (
-                  <div className="space-y-3 flex flex-col items-center text-center">
-                    <span className="text-[10px] bg-green-50 text-green-800 font-bold px-2 py-0.5 rounded uppercase tracking-widest font-mono">
-                      QRIS LISENSI RESMI
-                    </span>
-                    
-                    {/* Visual representation of a QR Code */}
-                    <div className="relative p-3 bg-white rounded-xl shadow-inner border border-green-100 group">
-                      <div className="w-40 h-40 bg-green-50/20 border border-green-100 relative flex items-center justify-center flex-wrap p-1">
-                        {/* QR pattern */}
-                        <div className="absolute top-2 left-2 w-10 h-10 border-[6px] border-green-900"></div>
-                        <div className="absolute top-2 right-2 w-10 h-10 border-[6px] border-green-900"></div>
-                        <div className="absolute bottom-2 left-2 w-10 h-10 border-[6px] border-green-900"></div>
-                        <div className="absolute top-[40%] left-[40%] w-[20%] h-[20%] bg-green-600 rounded flex items-center justify-center text-[7px] text-white font-black">
-                          SP
-                        </div>
-                        <div className="grid grid-cols-6 gap-1 w-full h-full opacity-60 p-4">
-                          {Array.from({ length: 36 }).map((_, i) => (
-                            <div 
-                              key={i} 
-                              className={`rounded-[2px] ${
-                                (i % 3 === 0 || i % 4 === 1 || i % 7 === 0) && i > 5 && i < 30
-                                  ? 'bg-green-900' 
-                                  : 'bg-transparent'
-                              }`} 
-                            />
-                          ))}
-                        </div>
+                    {/* Structured Message Template Preview */}
+                    <div className="bg-white p-3 rounded-xl border border-emerald-150/70 text-left text-[9.5px] space-y-1 font-mono text-emerald-900 border-dashed">
+                      <div className="font-bold text-emerald-950 border-b border-emerald-50 pb-1 mb-1.5 flex items-center justify-between">
+                        <span>PREVIEW DETAIL PESAN WA:</span>
+                        <span className="text-[7.5px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-sans font-bold">Autofill</span>
                       </div>
+                      <p className="truncate">Halo Admin SPENDA 🌟</p>
+                      <p className="truncate">Saya ingin mengaktifkan akun lisensi:</p>
+                      <p className="pl-1.5 truncate">• Nama: {tempRegistrationData?.name}</p>
+                      <p className="pl-1.5 truncate">• Email: {tempRegistrationData?.email}</p>
+                      <p className="pl-1.5 truncate">• Peran: {tempRegistrationData?.role}</p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const textMessage = 
+                        `Halo Admin EduData Spenda 🌟\n\n` +
+                        `Saya baru saja mendaftarkan akun di aplikasi Rombel Otomatis.\n\n` +
+                        `📝 DETAIL AKUN REGISTER:\n` +
+                        `• Nama Operator: ${tempRegistrationData?.name || fullName}\n` +
+                        `• Email Akun: ${tempRegistrationData?.email || email}\n` +
+                        `• Jabatan/Peran: ${tempRegistrationData?.role || role}\n\n` +
+                        `Mohon petunjuk untuk prosedur pembelian lisensi & aktivasi akunya. Terima kasih!`;
                       
-                      {/* Scan box glow */}
-                      <div className="absolute inset-x-0 top-3 h-[2px] bg-green-600 animate-bounce"></div>
-                    </div>
-
-                    <p className="text-[10px] text-green-700 leading-relaxed max-w-xs">
-                      Pindai QRIS di atas dengan aplikasi e-wallet (GoPay, OVO, Dana, LinkAja) atau Mobile Banking. status akan otomatis aktif.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2.5 text-[11px] leading-relaxed text-green-900">
-                    <div className="bg-green-50 p-2.5 rounded-lg border border-green-100 space-y-1 text-center font-mono">
-                      <span className="text-[9.5px] text-green-600 uppercase tracking-widest block font-bold">REKENING AKTIVASI</span>
-                      <strong className="text-green-950 text-sm block tracking-widest">144-0019-2831-29</strong>
-                      <span className="text-[10px] text-green-700 font-bold block">BANK MANDIRI (An. EduData Spenda Dev)</span>
-                    </div>
-                    <ul className="list-disc pl-4 space-y-1 text-green-700/80 text-[10.5px]">
-                      <li>Transfer tepat sejumlah <strong className="text-green-950">Rp 150.000</strong> ke rekening di atas</li>
-                      <li>Simpan bukti transfer gambar / screenshot berkas Anda</li>
-                      <li>Tekan tombol verifikasi pembayaran di bawah untuk aktivasi instan</li>
-                    </ul>
-                  </div>
-                )}
+                      const encodedText = encodeURIComponent(textMessage);
+                      const waLink = `https://wa.me/${whatsappAdminNumber}?text=${encodedText}`;
+                      window.open(waLink, '_blank');
+                    }}
+                    className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] text-white rounded-xl text-xs font-black tracking-wide shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  >
+                    <MessageSquare size={14} className="fill-white/10" />
+                    <span>HUBUNGI ADMIN WHATSAPP</span>
+                  </button>
+                </div>
               </div>
 
               {/* Feedbacks in step */}
