@@ -463,7 +463,7 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
                       className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] text-white rounded-xl text-xs font-black tracking-wide shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
                     >
                       <MessageSquare size={14} className="fill-white/10" />
-                      <span>HUBUNGI ADMIN WHATSAPP (BELI LISENSI)</span>
+                      <span>HUBUNGI ADMIN WHATSAPP</span>
                     </button>
                   </div>
                 ) : paymentMethod === 'qris' ? (
@@ -563,65 +563,6 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
                     )}
                   </button>
                 )}
-
-                {/* WhatsApp setup configuration panel */}
-                <div className="border border-slate-100 rounded-xl p-3 bg-slate-50/70 text-[9.5px] text-zinc-500 space-y-1 mt-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-700">⚙️ Pengaturan WA Admin Penjualan</span>
-                    {!isConfiguringWa ? (
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          setWaInputTemp(whatsappAdminNumber);
-                          setIsConfiguringWa(true);
-                        }}
-                        className="text-emerald-600 hover:text-emerald-800 font-bold flex items-center gap-1"
-                      >
-                        <Edit2 size={9} />
-                        <span>Ubah Nomor</span>
-                      </button>
-                    ) : (
-                      <div className="flex gap-2">
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            if (waInputTemp.trim()) {
-                              setWhatsappAdminNumber(waInputTemp.trim());
-                              localStorage.setItem('SPENDA_PAYMENT_WA_NUMBER', waInputTemp.trim());
-                              setIsConfiguringWa(false);
-                            }
-                          }}
-                          className="text-emerald-600 font-bold font-sans uppercase"
-                        >
-                          Simpan
-                        </button>
-                        <button 
-                          type="button"
-                          onClick={() => setIsConfiguringWa(false)}
-                          className="text-slate-400 font-sans"
-                        >
-                          Batal
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  {isConfiguringWa ? (
-                    <div className="mt-1 space-y-1">
-                      <input 
-                        type="text"
-                        value={waInputTemp}
-                        onChange={(e) => setWaInputTemp(e.target.value)}
-                        placeholder="Contoh: 6282329380931"
-                        className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none"
-                      />
-                      <span className="text-[8px] text-slate-400 leading-none block">Gunakan awalan kode negara tanpa spasi (contoh: 62823...)</span>
-                    </div>
-                  ) : (
-                    <p className="text-slate-600 leading-tight">
-                      Link WhatsApp saat ini dikirim ke: <code className="font-mono font-black bg-emerald-50 px-1 rounded text-emerald-800">+{whatsappAdminNumber}</code>. Anda dapat menyesuaikan nomor tujuan ini agar diarahkan langsung ke no WA Anda!
-                    </p>
-                  )}
-                </div>
 
                 <button
                   type="button"
