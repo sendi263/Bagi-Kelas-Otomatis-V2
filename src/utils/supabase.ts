@@ -7,11 +7,11 @@ import { createClient } from '@supabase/supabase-js';
 import { Student, DapodikSyncLog, UpdateNotification, SchoolSettings } from '../types';
 import { secureStorage } from './security';
 
-const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
-const supabaseKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
+export const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
+export const supabaseKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
 
 // Check if credentials are valid (i.e. not boilerplate/empty)
-const isConfigured = 
+export const isConfigured = 
   !!supabaseUrl && 
   !!supabaseKey && 
   supabaseUrl !== 'https://your-project.supabase.co' && 
