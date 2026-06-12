@@ -618,7 +618,7 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
 
                 {!isLoginMode && (
                   <div className="text-[10.5px] text-green-800 bg-green-50 px-3 py-2 rounded-lg border border-green-150 text-center font-medium leading-relaxed">
-                    💸 Biaya Registrasi: <strong>Rp 150.000 / Sekolah</strong> (Sekali Bayar). Verifikasi QRIS otomatis atau Bank Transfer.
+                    💸 Biaya Registrasi: <strong>Rp 100.000 / Sekolah</strong> (Sekali Bayar). Verifikasi instan via WhatsApp.
                   </div>
                 )}
 
