@@ -55,7 +55,7 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
   const [paymentMethod, setPaymentMethod] = useState<'wa' | 'qris' | 'transfer'>('wa');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [paymentAmount] = useState('150.000');
+  const [paymentAmount] = useState('100.000');
   const [tempRegistrationData, setTempRegistrationData] = useState<any>(null);
 
   // Seed and synchronize registered users with Supabase
