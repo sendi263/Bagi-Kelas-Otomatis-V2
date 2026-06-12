@@ -157,6 +157,69 @@ export default function SchoolSettingsPanel({
     }
   };
 
+  const [isAddingUser, setIsAddingUser] = useState(false);
+  const [newOpEmail, setNewOpEmail] = useState('');
+  const [newOpPassword, setNewOpPassword] = useState('');
+  const [newOpName, setNewOpName] = useState('');
+  const [newOpRole, setNewOpRole] = useState('Operator Utama');
+  const [newOpError, setNewOpError] = useState('');
+
+  const handleManualAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNewOpError('');
+
+    if (!newOpEmail || !newOpPassword || !newOpName) {
+      setNewOpError('Semua kolom bertanda wajib harus diisi.');
+      return;
+    }
+
+    if (newOpPassword.length < 5) {
+      setNewOpError('Karakter kata sandi minimal harus terdiri dari 5 karakter.');
+      return;
+    }
+
+    const emailLower = newOpEmail.trim().toLowerCase();
+    const isTaken = registeredUsers.some(u => u.email.toLowerCase() === emailLower);
+    if (isTaken) {
+      setNewOpError('Email operator ini sudah terdaftar.');
+      return;
+    }
+
+    const initials = newOpName.trim()
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase() || 'OP';
+
+    const newUser = {
+      email: emailLower,
+      password: newOpPassword,
+      name: newOpName.trim(),
+      role: newOpRole,
+      avatarInitial: initials,
+      activatePaid: true, // Manually added by admin is instantly activated
+      activationTime: new Date().toISOString()
+    };
+
+    const updated = [...registeredUsers, newUser];
+    setRegisteredUsers(updated);
+    secureStorage.setItem('SPENDA_REGISTERED_USERS', updated);
+
+    try {
+      await registeredUsersDb.save(newUser);
+    } catch (err) {
+      console.warn('Could not sync manually added user to Supabase:', err);
+    }
+
+    // Reset fields
+    setNewOpEmail('');
+    setNewOpPassword('');
+    setNewOpName('');
+    setNewOpRole('Operator Utama');
+    setIsAddingUser(false);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -968,7 +1031,7 @@ export default function SchoolSettingsPanel({
 
       {/* SECTION B: KELOLA OPERATOR & AKTIVASI LISENSI */}
       <div className="bg-white border border-slate-150 rounded-2xl p-5 md:p-6 shadow-sm space-y-5 mt-6" id="operator-management-card">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div className="space-y-1">
             <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2">
               <ShieldCheck className="text-emerald-600 w-5 h-5" />
@@ -978,11 +1041,113 @@ export default function SchoolSettingsPanel({
               Daftar seluruh operator sekolah yang telah mendaftar. Sebagai Admin Utama, Anda dapat memvalidasi pembayaran mereka secara manual, mengaktifkan akun, serta memberikan seluruh hak akses pekerjaan.
             </p>
           </div>
-          <div className="bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-150 text-emerald-700 text-xs font-mono font-medium flex items-center gap-1.5 self-start sm:self-center shrink-0">
-            <Unlock size={14} className="text-emerald-600" />
-            <span>Mekanisme WhatsApp Terhubung</span>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start lg:self-center">
+            <button
+              type="button"
+              onClick={() => setIsAddingUser(!isAddingUser)}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white hover:text-white rounded-lg text-xs font-black shadow-sm flex items-center gap-1.5 select-none transition-all cursor-pointer hover:scale-[1.01]"
+            >
+              <UserCog size={14} className="stroke-[2.5]" />
+              <span>+ Tambah Operator Manual</span>
+            </button>
+            <div className="bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-150 text-emerald-700 text-xs font-mono font-medium flex items-center gap-1.5 select-none">
+              <Unlock size={14} className="text-emerald-600" />
+              <span>Mekanisme WhatsApp Terhubung</span>
+            </div>
           </div>
         </div>
+
+        {isAddingUser && (
+          <form onSubmit={handleManualAddUser} className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 md:p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+              <span className="font-extrabold text-xs text-slate-800 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                <UserCog className="text-emerald-600 w-4 h-4" />
+                Tambah Operator Baru [Instant Aktif]
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsAddingUser(false)}
+                className="text-xs text-slate-400 hover:text-slate-600 font-bold transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+            </div>
+
+            {newOpError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 p-2 text-xs rounded-lg font-medium leading-relaxed">
+                ⚠️ {newOpError}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Nama Lengkap *</label>
+                <input
+                  type="text"
+                  required
+                  value={newOpName}
+                  onChange={(e) => setNewOpName(e.target.value)}
+                  placeholder="Contoh: Muhammad Akhyar"
+                  className="w-full bg-white border border-slate-250 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-green-600 focus:ring-1 focus:ring-green-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider font-mono">E-mail Login *</label>
+                <input
+                  type="email"
+                  required
+                  value={newOpEmail}
+                  onChange={(e) => setNewOpEmail(e.target.value)}
+                  placeholder="Contoh: akhi@smp.belajar.id"
+                  className="w-full bg-white border border-slate-250 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-green-600 focus:ring-1 focus:ring-green-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Kata Sandi *</label>
+                <input
+                  type="text"
+                  required
+                  value={newOpPassword}
+                  onChange={(e) => setNewOpPassword(e.target.value)}
+                  placeholder="Min. 5 karakter"
+                  className="w-full bg-white border border-slate-250 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-green-600 focus:ring-1 focus:ring-green-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Peran / Jabatan *</label>
+                <select
+                  value={newOpRole}
+                  onChange={(e) => setNewOpRole(e.target.value)}
+                  className="w-full bg-white border border-slate-250 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-green-600"
+                >
+                  <option value="Operator Utama">Operator Utama</option>
+                  <option value="Staf Kesiswaan">Staf Kesiswaan</option>
+                  <option value="Wakasek Kurikulum">Wakasek Kurikulum</option>
+                  <option value="Kepala Sekolah">Kepala Sekolah</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setIsAddingUser(false)}
+                className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold text-[11px] rounded-lg transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[11px] rounded-lg shadow-sm hover:shadow active:scale-[0.98] transition-all cursor-pointer"
+              >
+                ✓ Simpan & Aktifkan Operator
+              </button>
+            </div>
+          </form>
+        )}
 
         <div className="overflow-x-auto border border-slate-100 rounded-xl">
           <table className="w-full text-left border-collapse">
