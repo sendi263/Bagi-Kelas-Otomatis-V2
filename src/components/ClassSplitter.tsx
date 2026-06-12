@@ -32,12 +32,14 @@ interface ClassSplitterProps {
   students: Student[];
   onApplyClassDivision: (updatedStudents: Student[]) => void;
   schoolSettings?: SchoolSettings;
+  currentUserRole?: string;
 }
 
 export default function ClassSplitter({
   students,
   onApplyClassDivision,
   schoolSettings = DEFAULT_SCHOOL_SETTINGS,
+  currentUserRole,
 }: ClassSplitterProps) {
   // Step workflow status and Level Tabs
   const [step, setStep] = useState<'setup' | 'results'>('setup');
@@ -180,8 +182,10 @@ export default function ClassSplitter({
     const buckets: Student[][] = Array.from({ length: K }, () => []);
 
     // 1. Filter out students with valid matching class requests/locks
-    const requestedStudents = eligible.filter(s => classRequests[s.id] && classNames.includes(classRequests[s.id]));
-    const remainingStudents = eligible.filter(s => !classRequests[s.id] || !classNames.includes(classRequests[s.id]));
+    const isDemo = currentUserRole === 'Demo';
+    const activeRequests = isDemo ? {} : classRequests;
+    const requestedStudents = isDemo ? [] : eligible.filter(s => activeRequests[s.id] && classNames.includes(activeRequests[s.id]));
+    const remainingStudents = isDemo ? eligible : eligible.filter(s => !activeRequests[s.id] || !classNames.includes(activeRequests[s.id]));
 
     // 2. Count preassigned boys and girls per class index, and populate initial buckets
     const preassignedBoys = Array(K).fill(0);
@@ -1683,220 +1687,230 @@ export default function ClassSplitter({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-3 border-t border-slate-100">
-              {/* SISI KIRI: CARI & TAMBAH REQUEST */}
-              <div className="space-y-3">
-                <span className="block text-[11px] font-extrabold text-slate-700 uppercase tracking-wider font-mono">
-                  Tambah Kunci Rombel Baru
-                </span>
+            {currentUserRole === 'Demo' ? (
+              <div className="p-6 text-center space-y-3 border border-dashed border-amber-300 rounded-xl bg-amber-50/20 w-full">
+                <AlertTriangle size={24} className="text-amber-500 mx-auto" />
+                <h4 className="text-xs font-extrabold text-amber-800 uppercase font-mono tracking-wide">Request Kelas Dinonaktifkan (Akun Demo)</h4>
+                <p className="text-[10.5px] text-slate-500 max-w-md mx-auto leading-relaxed">
+                  Sesuai batasan akun Demo Anda, fitur penguncian rombel / request kelas khusus dinonaktifkan. Seluruh simulasi pembagian rombel di atas akan mengabaikan data kunci rombel dan memperlakukan semua siswa secara heterogen atau acak.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-3 border-t border-slate-100">
+                {/* SISI KIRI: CARI & TAMBAH REQUEST */}
+                <div className="space-y-3">
+                  <span className="block text-[11px] font-extrabold text-slate-700 uppercase tracking-wider font-mono">
+                    Tambah Kunci Rombel Baru
+                  </span>
 
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
-                    <Search size={14} />
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+                      <Search size={14} />
+                    </div>
+                    <input
+                      type="text"
+                      value={reqSearchTerm}
+                      onChange={(e) => {
+                        setReqSearchTerm(e.target.value);
+                        setSelectedStudentForReq('');
+                      }}
+                      placeholder="Cari siswa berdasarkan nama atau NISN..."
+                      className="w-full text-[11px] pl-8 pr-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-all font-medium"
+                    />
                   </div>
-                  <input
-                    type="text"
-                    value={reqSearchTerm}
-                    onChange={(e) => {
-                      setReqSearchTerm(e.target.value);
-                      setSelectedStudentForReq('');
-                    }}
-                    placeholder="Cari siswa berdasarkan nama atau NISN..."
-                    className="w-full text-[11px] pl-8 pr-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-all font-medium"
-                  />
-                </div>
 
-                {/* Hasil pencarian instan */}
-                {reqSearchTerm && !selectedStudentForReq && (
-                  <div className="border border-slate-200 rounded-lg bg-white overflow-hidden max-h-48 overflow-y-auto divide-y divide-slate-100 shadow-sm animate-fade-in z-10 relative">
-                    {students
-                      .filter(s => s.status === 'Aktif' && getStudentLevel(s) !== 'Unknown')
-                      .filter(s => {
-                        const term = reqSearchTerm.toLowerCase();
-                        return (
-                          s.name.toLowerCase().includes(term) ||
-                          (s.nisn && s.nisn.includes(term))
-                        );
-                      })
-                      .slice(0, 5)
-                      .map((stu) => {
-                        const lvl = getStudentLevel(stu);
-                        const currentLock = classRequests[stu.id];
-                        return (
-                          <div
-                            key={stu.id}
-                            onClick={() => {
-                              setSelectedStudentForReq(stu.id);
-                              // Default target class
-                              const defaultClass = lvl === '7' ? '7.1' : lvl === '8' ? '8.1' : '9.1';
-                              setSelectedClassForReq(currentLock || defaultClass);
-                            }}
-                            className="p-2 hover:bg-slate-50 cursor-pointer flex items-center justify-between text-[11px]"
-                          >
-                            <div className="space-y-0.5">
-                              <span className="font-extrabold text-slate-800 block">{stu.name}</span>
-                              <span className="text-[9.5px] text-slate-400 font-mono">
-                                {stu.gender === 'L' ? 'Laki-laki' : 'Perempuan'} • NISN: {stu.nisn || '-'} • Rapor: {stu.averageGrade}
+                  {/* Hasil pencarian instan */}
+                  {reqSearchTerm && !selectedStudentForReq && (
+                    <div className="border border-slate-200 rounded-lg bg-white overflow-hidden max-h-48 overflow-y-auto divide-y divide-slate-100 shadow-sm animate-fade-in z-10 relative">
+                      {students
+                        .filter(s => s.status === 'Aktif' && getStudentLevel(s) !== 'Unknown')
+                        .filter(s => {
+                          const term = reqSearchTerm.toLowerCase();
+                          return (
+                            s.name.toLowerCase().includes(term) ||
+                            (s.nisn && s.nisn.includes(term))
+                          );
+                        })
+                        .slice(0, 5)
+                        .map((stu) => {
+                          const lvl = getStudentLevel(stu);
+                          const currentLock = classRequests[stu.id];
+                          return (
+                            <div
+                              key={stu.id}
+                              onClick={() => {
+                                setSelectedStudentForReq(stu.id);
+                                // Default target class
+                                const defaultClass = lvl === '7' ? '7.1' : lvl === '8' ? '8.1' : '9.1';
+                                setSelectedClassForReq(currentLock || defaultClass);
+                              }}
+                              className="p-2 hover:bg-slate-50 cursor-pointer flex items-center justify-between text-[11px]"
+                            >
+                              <div className="space-y-0.5">
+                                <span className="font-extrabold text-slate-800 block">{stu.name}</span>
+                                <span className="text-[9.5px] text-slate-400 font-mono">
+                                  {stu.gender === 'L' ? 'Laki-laki' : 'Perempuan'} • NISN: {stu.nisn || '-'} • Rapor: {stu.averageGrade}
+                                </span>
+                              </div>
+                              <span className="font-extrabold font-mono text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                                Tingkat {lvl} {currentLock ? `(Lock: ${currentLock})` : ''}
                               </span>
                             </div>
-                            <span className="font-extrabold font-mono text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
-                              Tingkat {lvl} {currentLock ? `(Lock: ${currentLock})` : ''}
+                          );
+                        })}
+                      {students
+                        .filter(s => s.status === 'Aktif' && getStudentLevel(s) !== 'Unknown')
+                        .filter(s => {
+                          const term = reqSearchTerm.toLowerCase();
+                          return (
+                            s.name.toLowerCase().includes(term) ||
+                            (s.nisn && s.nisn.includes(term))
+                          );
+                        }).length === 0 && (
+                        <div className="p-3 text-center text-slate-400 font-medium text-[10.5px]">
+                          Siswa tidak ditemukan atau non-aktif
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Form detail kunci rombel setelah siswa dipilih */}
+                  {selectedStudentForReq && (() => {
+                    const stu = students.find(s => s.id === selectedStudentForReq);
+                    if (!stu) return null;
+                    const lvl = getStudentLevel(stu);
+                    
+                    // Generate list of available target classes
+                    const targetCount = lvl === '7' ? classCount7 : lvl === '8' ? classCount8 : classCount9;
+                    const opts: string[] = [];
+                    for (let i = 1; i <= targetCount; i++) {
+                      opts.push(`${lvl}.${i}`);
+                    }
+
+                    return (
+                      <div className="p-3 bg-slate-50 border border-slate-150 rounded-xl space-y-2.5 animate-fade-in">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <strong className="text-slate-800 text-[11px] block">{stu.name}</strong>
+                            <span className="text-[9.5px] text-slate-650 font-medium block">
+                              Calon Tingkat {lvl} • Asal Rerata: {stu.averageGrade}
                             </span>
                           </div>
-                        );
-                      })}
-                    {students
-                      .filter(s => s.status === 'Aktif' && getStudentLevel(s) !== 'Unknown')
-                      .filter(s => {
-                        const term = reqSearchTerm.toLowerCase();
-                        return (
-                          s.name.toLowerCase().includes(term) ||
-                          (s.nisn && s.nisn.includes(term))
-                        );
-                      }).length === 0 && (
-                      <div className="p-3 text-center text-slate-400 font-medium text-[10.5px]">
-                        Siswa tidak ditemukan atau non-aktif
+                          <button
+                            type="button"
+                            onClick={() => setSelectedStudentForReq('')}
+                            className="text-[9.5px] text-slate-400 hover:text-slate-600 font-bold"
+                          >
+                            Batal
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-1">
+                          <div className="flex-1 space-y-1">
+                            <label className="text-[9.5px] font-bold text-slate-600 block">Pilih Rombel Target</label>
+                            <select
+                              value={selectedClassForReq}
+                              onChange={(e) => setSelectedClassForReq(e.target.value)}
+                              className="w-full text-[10.5px] font-black border border-slate-200 rounded-lg p-1.5 focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white"
+                            >
+                              {opts.map(opt => (
+                                <option key={opt} value={opt}>Kelas {opt}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = { ...classRequests, [stu.id]: selectedClassForReq };
+                              updateClassRequests(updated);
+                              setSelectedStudentForReq('');
+                              setSelectedClassForReq('');
+                              setReqSearchTerm('');
+                              setNotificationMsg(`Berhasil mengunci ${stu.name} ke kelas ${selectedClassForReq}`);
+                              setTimeout(() => setNotificationMsg(''), 4000);
+                            }}
+                            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[10.5px] font-extrabold cursor-pointer self-end flex items-center gap-1.5"
+                          >
+                            <Lock size={12} className="stroke-[2.5]" />
+                            <span>Kunci Rombel</span>
+                          </button>
+                        </div>
                       </div>
+                    );
+                  })()}
+                </div>
+
+                {/* SISI KANAN: DAFTAR REQUEST AKTIF */}
+                <div className="space-y-3 border-t md:border-t-0 md:border-l border-slate-150 pt-4 md:pt-0 md:pl-5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                      Request Aktif ({Object.keys(classRequests).length})
+                    </span>
+                    {Object.keys(classRequests).length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm("Hapus semua request kelas yang sudah terdaftar?")) {
+                            updateClassRequests({});
+                          }
+                        }}
+                        className="text-[9.5px] font-extrabold text-red-500 hover:underline cursor-pointer"
+                      >
+                        Hapus Semua
+                      </button>
                     )}
                   </div>
-                )}
 
-                {/* Form detail kunci rombel setelah siswa dipilih */}
-                {selectedStudentForReq && (() => {
-                  const stu = students.find(s => s.id === selectedStudentForReq);
-                  if (!stu) return null;
-                  const lvl = getStudentLevel(stu);
-                  
-                  // Generate list of available target classes
-                  const targetCount = lvl === '7' ? classCount7 : lvl === '8' ? classCount8 : classCount9;
-                  const opts: string[] = [];
-                  for (let i = 1; i <= targetCount; i++) {
-                    opts.push(`${lvl}.${i}`);
-                  }
-
-                  return (
-                    <div className="p-3 bg-slate-50 border border-slate-150 rounded-xl space-y-2.5 animate-fade-in">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <strong className="text-slate-800 text-[11px] block">{stu.name}</strong>
-                          <span className="text-[9.5px] text-slate-650 font-medium block">
-                            Calon Tingkat {lvl} • Asal Rerata: {stu.averageGrade}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedStudentForReq('')}
-                          className="text-[9.5px] text-slate-400 hover:text-slate-600 font-bold"
-                        >
-                          Batal
-                        </button>
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {Object.entries(classRequests).length === 0 ? (
+                      <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-slate-400 font-medium text-[10.5px]">
+                        Belum ada siswa yang dikunci rombelnya. Semua siswa di tingkat terpilih akan dibagi secara acak / heterogen.
                       </div>
-
-                      <div className="flex items-center gap-2 pt-1">
-                        <div className="flex-1 space-y-1">
-                          <label className="text-[9.5px] font-bold text-slate-600 block">Pilih Rombel Target</label>
-                          <select
-                            value={selectedClassForReq}
-                            onChange={(e) => setSelectedClassForReq(e.target.value)}
-                            className="w-full text-[10.5px] font-black border border-slate-200 rounded-lg p-1.5 focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white"
-                          >
-                            {opts.map(opt => (
-                              <option key={opt} value={opt}>Kelas {opt}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updated = { ...classRequests, [stu.id]: selectedClassForReq };
-                            updateClassRequests(updated);
-                            setSelectedStudentForReq('');
-                            setSelectedClassForReq('');
-                            setReqSearchTerm('');
-                            setNotificationMsg(`Berhasil mengunci ${stu.name} ke kelas ${selectedClassForReq}`);
-                            setTimeout(() => setNotificationMsg(''), 4000);
-                          }}
-                          className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[10.5px] font-extrabold cursor-pointer self-end flex items-center gap-1.5"
-                        >
-                          <Lock size={12} className="stroke-[2.5]" />
-                          <span>Kunci Rombel</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* SISI KANAN: DAFTAR REQUEST AKTIF */}
-              <div className="space-y-3 border-t md:border-t-0 md:border-l border-slate-150 pt-4 md:pt-0 md:pl-5">
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                    Request Aktif ({Object.keys(classRequests).length})
-                  </span>
-                  {Object.keys(classRequests).length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (confirm("Hapus semua request kelas yang sudah terdaftar?")) {
-                          updateClassRequests({});
-                        }
-                      }}
-                      className="text-[9.5px] font-extrabold text-red-500 hover:underline cursor-pointer"
-                    >
-                      Hapus Semua
-                    </button>
-                  )}
-                </div>
-
-                <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                  {Object.entries(classRequests).length === 0 ? (
-                    <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-slate-400 font-medium text-[10.5px]">
-                      Belum ada siswa yang dikunci rombelnya. Semua siswa di tingkat terpilih akan dibagi secara acak / heterogen.
-                    </div>
-                  ) : (
-                    Object.entries(classRequests)
-                      .map(([id, clsName]) => {
-                        const student = students.find(s => s.id === id);
-                        if (!student) return null;
-                        const lvl = getStudentLevel(student);
-                        return (
-                          <div
-                            key={id}
-                            className="p-2 border border-slate-150 rounded-xl flex items-center justify-between bg-amber-50/20 text-[10.5px] font-medium animate-fade-in"
-                          >
-                            <div className="space-y-0.5">
-                              <span className="font-extrabold text-slate-800 block">{student.name}</span>
-                              <span className="text-[9px] text-slate-400 font-mono">
-                                Tingkat {lvl} • Nilai Rapor: {student.averageGrade}
-                              </span>
+                    ) : (
+                      Object.entries(classRequests)
+                        .map(([id, clsName]) => {
+                          const student = students.find(s => s.id === id);
+                          if (!student) return null;
+                          const lvl = getStudentLevel(student);
+                          return (
+                            <div
+                              key={id}
+                              className="p-2 border border-slate-150 rounded-xl flex items-center justify-between bg-amber-50/20 text-[10.5px] font-medium animate-fade-in"
+                            >
+                              <div className="space-y-0.5">
+                                <span className="font-extrabold text-slate-800 block">{student.name}</span>
+                                <span className="text-[9px] text-slate-400 font-mono">
+                                  Tingkat {lvl} • Nilai Rapor: {student.averageGrade}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="bg-amber-100 text-amber-800 border border-amber-250 px-2 py-0.5 rounded-lg font-black font-mono text-[9.5px] flex items-center gap-1 shadow-sm">
+                                  <Lock size={9} className="stroke-[3]" />
+                                  {clsName}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const reqs = { ...classRequests };
+                                    delete reqs[id];
+                                    updateClassRequests(reqs);
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors"
+                                  title="Unlock"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="bg-amber-100 text-amber-800 border border-amber-250 px-2 py-0.5 rounded-lg font-black font-mono text-[9.5px] flex items-center gap-1 shadow-sm">
-                                <Lock size={9} className="stroke-[3]" />
-                                {clsName}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const reqs = { ...classRequests };
-                                  delete reqs[id];
-                                  updateClassRequests(reqs);
-                                }}
-                                className="p-1 text-slate-400 hover:text-red-500 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors"
-                                title="Unlock"
-                              >
-                                <Trash2 size={12} />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })
-                      .filter(Boolean)
-                  )}
+                          );
+                        })
+                        .filter(Boolean)
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Central Process Button */}

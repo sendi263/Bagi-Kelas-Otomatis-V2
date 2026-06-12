@@ -21,7 +21,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { AuthUser } from '../types';
 import { secureStorage } from '../utils/security';
-import { authService } from '../utils/firebase';
+import { authService } from '../utils/supabase';
 
 interface AuthScreenProps {
   onLoginSuccess: (user: AuthUser) => void;
@@ -46,20 +46,51 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
   const [paymentAmount] = useState('150.000');
   const [tempRegistrationData, setTempRegistrationData] = useState<any>(null);
 
-  // Seed the default Operator user into localStorage if it doesn't already exist
+  // Seed the default users into localStorage if they don't already exist
   useEffect(() => {
-    const defaultOperator = {
-      email: 'sendi263@guru.smp.belajar.id',
-      password: 'operator-spenda',
-      name: 'Sendi Tio Alsi',
-      role: 'Operator Utama',
-      avatarInitial: 'ST'
-    };
+    const defaultUsers = [
+      {
+        email: 'sendi263@guru.smp.belajar.id',
+        password: 'operator-spenda',
+        name: 'Sendi Tio Alsi',
+        role: 'Operator Utama',
+        avatarInitial: 'ST'
+      },
+      {
+        email: 'admin@smp.belajar.id',
+        password: 'admin-spenda',
+        name: 'Administrator Utama',
+        role: 'Operator Utama',
+        avatarInitial: 'AU'
+      },
+      {
+        email: 'staf.kesiswaan@smp.belajar.id',
+        password: 'staff123',
+        name: 'Siti Rahmawati',
+        role: 'Staf Kesiswaan',
+        avatarInitial: 'SR'
+      },
+      {
+        email: 'demo@smp.belajar.id',
+        password: 'demo123',
+        name: 'Operator Demo',
+        role: 'Demo',
+        avatarInitial: 'OD'
+      }
+    ];
 
     const usersList = secureStorage.getItem<any[]>('SPENDA_REGISTERED_USERS', []);
-    const exists = usersList.some((u: any) => u.email === defaultOperator.email);
-    if (!exists) {
-      usersList.push(defaultOperator);
+    let modified = false;
+
+    defaultUsers.forEach(defUser => {
+      const exists = usersList.some((u: any) => u.email.toLowerCase() === defUser.email.toLowerCase());
+      if (!exists) {
+        usersList.push(defUser);
+        modified = true;
+      }
+    });
+
+    if (modified) {
       secureStorage.setItem('SPENDA_REGISTERED_USERS', usersList);
     }
   }, []);
@@ -120,7 +151,7 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
         avatarInitial: matchedUser.avatarInitial || matchedUser.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
       };
       
-      // Silent anonymous Firebase login to guarantee Firebase authorization
+      // Silent anonymous Supabase login to guarantee database authorization
       authService.loginAnonymously().catch(err => console.log("Silent Anonymous Auth Failed: ", err));
 
       setTimeout(() => {
@@ -212,7 +243,7 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
     }, 2800);
   };
 
-  const useDemoAccount = (demoType: 'default' | 'staff') => {
+  const useDemoAccount = (demoType: 'default' | 'admin' | 'staff' | 'demo') => {
     setErrorMsg('');
     setSuccessMsg('');
     setIsPaymentStep(false);
@@ -220,26 +251,15 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
     if (demoType === 'default') {
       setEmail('sendi263@guru.smp.belajar.id');
       setPassword('operator-spenda');
-    } else {
-      // Ensure the staff demo exists
-      const users = secureStorage.getItem<any[]>('SPENDA_REGISTERED_USERS', []);
-      const staffEmail = 'staf.kesiswaan@smp.belajar.id';
-      const staffPass = 'staff123';
-      
-      const exists = users.some((u: any) => u.email === staffEmail);
-      if (!exists) {
-        users.push({
-          email: staffEmail,
-          password: staffPass,
-          name: 'Siti Rahmawati',
-          role: 'Staf Kesiswaan',
-          avatarInitial: 'SR'
-        });
-        secureStorage.setItem('SPENDA_REGISTERED_USERS', users);
-      }
-      
-      setEmail(staffEmail);
-      setPassword(staffPass);
+    } else if (demoType === 'admin') {
+      setEmail('admin@smp.belajar.id');
+      setPassword('admin-spenda');
+    } else if (demoType === 'staff') {
+      setEmail('staf.kesiswaan@smp.belajar.id');
+      setPassword('staff123');
+    } else if (demoType === 'demo') {
+      setEmail('demo@smp.belajar.id');
+      setPassword('demo123');
     }
   };
 
@@ -658,32 +678,58 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
               {/* Quick-select Demo Accounts Panel for ease-of-use */}
               <div className="border-t border-green-100 pt-4 space-y-2.5">
                 <span className="block text-[10.5px] font-bold text-green-700 tracking-wider uppercase font-mono text-center">
-                  Pilih Akun Cepat (Demo Shortcut):
+                  Pilih Akun Cepat (Koneksi Instan):
                 </span>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => useDemoAccount('default')}
-                    className="p-2.5 bg-green-50/30 hover:bg-green-50 border border-green-100 rounded-xl text-left transition-all cursor-pointer group space-y-0.5 shrink-0"
+                    className="p-2 bg-green-50/20 hover:bg-green-50/60 border border-green-100 rounded-xl text-left transition-all cursor-pointer group space-y-0.5 shrink-0"
                   >
                     <div className="flex items-center gap-1 justify-between">
-                      <span className="text-[10px] font-black text-green-700 font-mono">SENDI TIO ALSI</span>
+                      <span className="text-[9.5px] font-bold text-green-800 font-mono">SENDI TIO ALSI</span>
                       <Sparkles size={10} className="text-green-600 group-hover:animate-bounce" />
                     </div>
-                    <span className="text-[9px] text-green-800 block font-medium truncate">sendi263@guru.smp...</span>
-                    <span className="text-[8.5px] text-green-600 font-mono block">Pass: operator-spenda</span>
+                    <span className="text-[8.5px] text-green-600 font-mono block">operator-spenda</span>
+                    <span className="text-[8px] bg-green-100 text-green-800 px-1 py-0.2 rounded font-sans font-bold">Operator Utama</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => useDemoAccount('admin')}
+                    className="p-2 bg-green-50/20 hover:bg-green-50/60 border border-green-100 rounded-xl text-left transition-all cursor-pointer group space-y-0.5 shrink-0"
+                  >
+                    <div className="flex items-center gap-1 justify-between">
+                      <span className="text-[9.5px] font-bold text-green-800 font-mono">ADMIN UTAMA</span>
+                      <ShieldCheck size={10} className="text-green-600" />
+                    </div>
+                    <span className="text-[8.5px] text-green-600 font-mono block">admin-spenda</span>
+                    <span className="text-[8px] bg-sky-100 text-sky-800 px-1 py-0.2 rounded font-sans font-bold">Selamanya</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => useDemoAccount('staff')}
-                    className="p-2.5 bg-green-50/30 hover:bg-green-50 border border-green-100 rounded-xl text-left transition-all cursor-pointer group space-y-0.5 shrink-0"
+                    className="p-2 bg-green-50/20 hover:bg-green-50/60 border border-green-100 rounded-xl text-left transition-all cursor-pointer group space-y-0.5 shrink-0"
                   >
                     <div className="flex items-center gap-1 justify-between">
-                      <span className="text-[10px] font-black text-green-650 font-mono">STAFF KESISWAAN</span>
+                      <span className="text-[9.5px] font-bold text-green-800 font-mono">SITI RAHMAWATI</span>
                     </div>
-                    <span className="text-[9px] text-green-800 block font-medium truncate">staf.kesiswaan@smp...</span>
-                    <span className="text-[8.5px] text-green-600 font-mono block">Pass: staff123</span>
+                    <span className="text-[8.5px] text-green-600 font-mono block">staff123</span>
+                    <span className="text-[8px] bg-slate-100 text-slate-755 px-1 py-0.2 rounded font-sans font-bold">Staff Kesiswaan</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => useDemoAccount('demo')}
+                    className="p-2 bg-amber-50/20 hover:bg-amber-50/50 border border-amber-100 rounded-xl text-left transition-all cursor-pointer group space-y-0.5 shrink-0"
+                  >
+                    <div className="flex items-center gap-1 justify-between">
+                      <span className="text-[9.5px] font-bold text-amber-900 font-mono">AKUN DEMO</span>
+                      <Lock size={10} className="text-amber-600" />
+                    </div>
+                    <span className="text-[8.5px] text-amber-700 font-mono block">demo123</span>
+                    <span className="text-[8px] bg-amber-100 text-amber-800 px-1 py-0.2 rounded font-sans font-bold">Akses Terbatas</span>
                   </button>
                 </div>
               </div>

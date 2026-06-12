@@ -36,8 +36,7 @@ import ExportPanel from './components/ExportPanel';
 import SchoolSettingsPanel from './components/SchoolSettingsPanel';
 import AuthScreen from './components/AuthScreen';
 import { secureStorage, preventDevToolsCloning } from './utils/security';
-import { auth, studentDb, syncLogDb, notificationDb, schoolSettingsDb, authService } from './utils/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { auth, studentDb, syncLogDb, notificationDb, schoolSettingsDb, authService, onAuthStateChanged } from './utils/supabase';
 
 export default function App() {
   // Sidebar states (mobile responsive)
@@ -124,11 +123,11 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Synchronize with Firebase Firestore on active authentication session
+  // Synchronize with Supabase on active authentication session
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
-        console.log("Firebase Session Connected:", fbUser.uid);
+        console.log("Supabase Session Connected:", fbUser.uid);
         try {
           // 1. School Settings
           let settings = await schoolSettingsDb.get('default_settings');
@@ -416,14 +415,21 @@ export default function App() {
                   setActiveTab('pengaturan');
                   setSidebarOpen(false);
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-bold transition-all cursor-pointer ${
+                className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg font-bold transition-all cursor-pointer ${
                   activeTab === 'pengaturan' 
                     ? 'bg-green-800 text-white font-extrabold shadow-sm' 
                     : 'hover:bg-green-800/50 text-green-300 hover:text-white'
                 }`}
               >
-                <Settings size={16} />
-                <span>Identitas & Kop Sekolah</span>
+                <div className="flex items-center gap-3">
+                  <Settings size={16} />
+                  <span>Identitas & Kop Sekolah</span>
+                </div>
+                {currentUser?.role === 'Demo' && (
+                  <span className="bg-amber-500/25 border border-amber-500/40 text-amber-350 text-[8.5px] font-black px-1.5 py-0.5 rounded uppercase font-mono tracking-wider">
+                     Locked
+                  </span>
+                )}
               </button>
 
               {/* Tab: Student database */}
@@ -591,6 +597,7 @@ export default function App() {
                 onUpdateStudent={handleUpdateStudent}
                 onUpdateStudentsBatch={handleUpdateStudentsBatch}
                 onResetAllGrades={handleResetAllGrades}
+                currentUserRole={currentUser?.role}
               />
             )}
 
@@ -599,6 +606,7 @@ export default function App() {
                 students={students}
                 onApplyClassDivision={handleApplyClassDivision}
                 schoolSettings={schoolSettings}
+                currentUserRole={currentUser?.role}
               />
             )}
 
@@ -610,11 +618,23 @@ export default function App() {
             )}
 
             {activeTab === 'pengaturan' && (
-              <SchoolSettingsPanel 
-                settings={schoolSettings}
-                onUpdateSettings={handleUpdateSchoolSettings}
-                onResetSettings={handleResetSchoolSettings}
-              />
+              currentUser?.role === 'Demo' ? (
+                <div className="bg-white border border-red-200 rounded-2xl p-8 max-w-xl mx-auto my-12 shadow-sm text-center space-y-4">
+                  <div className="mx-auto w-12 h-12 bg-red-50 text-red-650 rounded-full flex items-center justify-center">
+                    <ShieldAlert size={24} />
+                  </div>
+                  <h3 className="text-base font-black text-slate-900 tracking-tight uppercase font-mono">Akses Terbaca-Saja Dibatasi</h3>
+                  <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                    Maaf, profil <strong className="text-red-700">Operator Demo</strong> tidak diizinkan untuk melihat atau melakukan modifikasi pada Identitas dan Kop Surat Resmi Sekolah. Silakan beralih ke akun Admin atau Operator Utama untuk hak akses penuh.
+                  </p>
+                </div>
+              ) : (
+                <SchoolSettingsPanel 
+                  settings={schoolSettings}
+                  onUpdateSettings={handleUpdateSchoolSettings}
+                  onResetSettings={handleResetSchoolSettings}
+                />
+              )
             )}
           </div>
         </main>

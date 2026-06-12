@@ -30,13 +30,15 @@ interface ReportCardManagerProps {
   onUpdateStudent: (updatedStudent: Student) => void;
   onUpdateStudentsBatch?: (updatedStudents: Student[]) => void;
   onResetAllGrades?: () => void;
+  currentUserRole?: string;
 }
 
 export default function ReportCardManager({ 
   students, 
   onUpdateStudent,
   onUpdateStudentsBatch,
-  onResetAllGrades
+  onResetAllGrades,
+  currentUserRole
 }: ReportCardManagerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
@@ -101,6 +103,10 @@ export default function ReportCardManager({
   };
 
   const handleDownloadTemplate = () => {
+    if (currentUserRole === 'Demo') {
+      setImportError("Akun Demo dibatasi: Tidak diizinkan mengunduh template Excel nilai rapor.");
+      return;
+    }
     try {
       const dataToExport = filteredStudents.length > 0 ? filteredStudents : activeStudents;
       if (dataToExport.length === 0) {
@@ -215,12 +221,23 @@ export default function ReportCardManager({
           });
         }
 
-        if (previewUpdates.length === 0) {
+        let isDemoLimited = false;
+        let finalUpdates = previewUpdates;
+        if (currentUserRole === 'Demo' && previewUpdates.length > 3) {
+          finalUpdates = previewUpdates.slice(0, 3);
+          isDemoLimited = true;
+        }
+
+        if (finalUpdates.length === 0) {
           setImportError("Tidak ada data siswa yang cocok dengan NISN aktif di sistem. Pastikan mengunggah file template yang sesuai.");
           setPreviewList([]);
         } else {
-          setPreviewList(previewUpdates);
-          setImportSuccess(`Berhasil memuat ${previewUpdates.length} data siswa dari Excel. Silakan periksa kolom sebelum menyimpan.`);
+          setPreviewList(finalUpdates);
+          if (isDemoLimited) {
+            setImportSuccess(`[Akun Demo] Hasil impor dibatasi secara ketat hanya untuk 3 siswa saja. Berhasil memuat 3 data siswa pertamanya dari Excel.`);
+          } else {
+            setImportSuccess(`Berhasil memuat ${finalUpdates.length} data siswa dari Excel. Silakan periksa kolom sebelum menyimpan.`);
+          }
           setImportError("");
         }
       } catch (err: any) {
@@ -568,10 +585,15 @@ export default function ReportCardManager({
                 <div className="pt-2">
                   <button
                     type="button"
+                    disabled={currentUserRole === 'Demo'}
                     onClick={handleDownloadTemplate}
-                    className="bg-green-50 hover:bg-green-100 text-green-750 border border-green-200 rounded-lg px-3 py-2 font-bold flex items-center gap-1.5 transition-all cursor-pointer text-[11px]"
+                    className={`border rounded-lg px-3 py-2 font-bold flex items-center gap-1.5 transition-all text-[11px] ${
+                      currentUserRole === 'Demo'
+                        ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-70'
+                        : 'bg-green-50 hover:bg-green-100 text-green-750 border-green-200 cursor-pointer'
+                    }`}
                   >
-                    <Download size={13} className="text-green-700" />
+                    <Download size={13} className={currentUserRole === 'Demo' ? 'text-slate-400' : 'text-green-700'} />
                     <span>Download Template Excel ({filteredStudents.length > 0 ? "Berdasarkan Filter" : "Semua Siswa"})</span>
                   </button>
                 </div>
