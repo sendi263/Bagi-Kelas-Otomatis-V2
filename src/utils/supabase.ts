@@ -343,3 +343,73 @@ export const schoolSettingsDb = {
     }
   }
 };
+
+export const registeredUsersDb = {
+  async getAll(): Promise<any[]> {
+    if (isConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('registered_users')
+          .select('*');
+        if (error) {
+          // Alternative fallback plural/alternate name if they made one
+          const alt = await supabase.from('registeredUsers').select('*');
+          if (alt.error) throw error;
+          return (alt.data || []).map((row: any) => row.data || row);
+        }
+        return (data || []).map((row: any) => row.data || row);
+      } catch (err) {
+        console.warn("Supabase registered_users load failed, using local backup fallback:", err);
+      }
+    }
+    return secureStorage.getItem<any[]>('SPENDA_REGISTERED_USERS', []);
+  },
+
+  async save(user: any): Promise<void> {
+    // If it is the demo account, NEVER save to Supabase to respect security & offline demo constraints
+    if (user.email.toLowerCase() === 'demo@smp.belajar.id') {
+      return;
+    }
+
+    if (isConfigured && supabase) {
+      try {
+        // Upsert standard structured wrapper
+        const { error } = await supabase
+          .from('registered_users')
+          .upsert({ email: user.email.toLowerCase(), data: user });
+        if (error) {
+          // If the schema matches flat columns, fallback to that
+          await supabase.from('registered_users').upsert({ ...user, data: user });
+        }
+      } catch (err) {
+        console.warn("Could not save registered user to remote Supabase:", err);
+      }
+    }
+  },
+
+  async saveBatch(users: any[]): Promise<void> {
+    if (isConfigured && supabase) {
+      try {
+        // Filter out demo user
+        const toSave = users.filter((u: any) => u.email.toLowerCase() !== 'demo@smp.belajar.id');
+        const payloads = toSave.map((u: any) => ({
+          email: u.email.toLowerCase(),
+          data: u
+        }));
+        if (payloads.length > 0) {
+          const { error } = await supabase
+            .from('registered_users')
+            .upsert(payloads);
+          if (error) {
+            // Flat fallback
+            const flatPayloads = toSave.map((u: any) => ({ ...u, data: u }));
+            await supabase.from('registered_users').upsert(flatPayloads);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not batch save registered users to remote Supabase:", err);
+      }
+    }
+  }
+};
+

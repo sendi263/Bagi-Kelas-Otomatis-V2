@@ -21,7 +21,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { AuthUser } from '../types';
 import { secureStorage } from '../utils/security';
-import { authService } from '../utils/supabase';
+import { authService, registeredUsersDb } from '../utils/supabase';
 
 interface AuthScreenProps {
   onLoginSuccess: (user: AuthUser) => void;
@@ -46,53 +46,77 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
   const [paymentAmount] = useState('150.000');
   const [tempRegistrationData, setTempRegistrationData] = useState<any>(null);
 
-  // Seed the default users into localStorage if they don't already exist
+  // Seed and synchronize registered users with Supabase
   useEffect(() => {
-    const defaultUsers = [
-      {
-        email: 'sendi263@guru.smp.belajar.id',
-        password: 'operator-spenda',
-        name: 'Sendi Tio Alsi',
-        role: 'Operator Utama',
-        avatarInitial: 'ST'
-      },
-      {
-        email: 'admin@smp.belajar.id',
-        password: 'admin-spenda',
-        name: 'Administrator Utama',
-        role: 'Operator Utama',
-        avatarInitial: 'AU'
-      },
-      {
-        email: 'staf.kesiswaan@smp.belajar.id',
-        password: 'staff123',
-        name: 'Siti Rahmawati',
-        role: 'Staf Kesiswaan',
-        avatarInitial: 'SR'
-      },
-      {
-        email: 'demo@smp.belajar.id',
-        password: 'demo123',
-        name: 'Operator Demo',
-        role: 'Demo',
-        avatarInitial: 'OD'
+    async function syncRegisteredUsers() {
+      // 1. Maintain official predefined template accounts
+      const defaultUsers = [
+        {
+          email: 'sendi263@guru.smp.belajar.id',
+          password: 'operator-spenda',
+          name: 'Sendi Tio Alsi',
+          role: 'Operator Utama',
+          avatarInitial: 'ST'
+        },
+        {
+          email: 'admin@smp.belajar.id',
+          password: 'admin-spenda',
+          name: 'Administrator Utama',
+          role: 'Operator Utama',
+          avatarInitial: 'AU'
+        },
+        {
+          email: 'staf.kesiswaan@smp.belajar.id',
+          password: 'staff123',
+          name: 'Siti Rahmawati',
+          role: 'Staf Kesiswaan',
+          avatarInitial: 'SR'
+        },
+        {
+          email: 'demo@smp.belajar.id',
+          password: 'demo123',
+          name: 'Operator Demo',
+          role: 'Demo',
+          avatarInitial: 'OD'
+        }
+      ];
+
+      try {
+        // 2. Fetch any accounts already saved on Supabase
+        const remoteUsers = await registeredUsersDb.getAll();
+        
+        // 3. Load locally cached accounts
+        const localUsers = secureStorage.getItem<any[]>('SPENDA_REGISTERED_USERS', []);
+
+        // 4. Merge together safely using case-insensitive email as key
+        const mergedMap = new Map<string, any>();
+        
+        // Load defaults
+        defaultUsers.forEach(u => mergedMap.set(u.email.toLowerCase(), u));
+        // Load local cash (to capture registered offline users if any)
+        localUsers.forEach(u => mergedMap.set(u.email.toLowerCase(), u));
+        // Load remote (remote has precedence for cross-device consistency)
+        if (Array.isArray(remoteUsers)) {
+          remoteUsers.forEach(u => {
+            if (u && u.email) {
+              mergedMap.set(u.email.toLowerCase(), u);
+            }
+          });
+        }
+
+        const mergedList = Array.from(mergedMap.values());
+
+        // Update local storage cache instantly
+        secureStorage.setItem('SPENDA_REGISTERED_USERS', mergedList);
+
+        // Save batch of non-demo users to Supabase if config is connected
+        await registeredUsersDb.saveBatch(mergedList);
+      } catch (err) {
+        console.warn("Could not sync registered users to remote Supabase server:", err);
       }
-    ];
-
-    const usersList = secureStorage.getItem<any[]>('SPENDA_REGISTERED_USERS', []);
-    let modified = false;
-
-    defaultUsers.forEach(defUser => {
-      const exists = usersList.some((u: any) => u.email.toLowerCase() === defUser.email.toLowerCase());
-      if (!exists) {
-        usersList.push(defUser);
-        modified = true;
-      }
-    });
-
-    if (modified) {
-      secureStorage.setItem('SPENDA_REGISTERED_USERS', usersList);
     }
+
+    syncRegisteredUsers();
   }, []);
 
   const handleGoogleLogin = async () => {
@@ -227,6 +251,11 @@ export default function AuthScreen({ onLoginSuccess, schoolName }: AuthScreenPro
 
         const updatedUsers = [...users, newUser];
         secureStorage.setItem('SPENDA_REGISTERED_USERS', updatedUsers);
+        
+        // Save to remote Supabase database
+        registeredUsersDb.save(newUser).catch(err => {
+          console.warn("Failed saving new registered user to Supabase:", err);
+        });
         
         setSuccessMsg(`Lisensi Aktif! Pembayaran berhasil diverifikasi mendalam. Akun ${newUser.name} diaktifkan.`);
         
